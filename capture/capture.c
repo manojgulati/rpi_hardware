@@ -111,9 +111,9 @@ int main(void){
     memset(&control, 0, sizeof(control));
     control.value=(val%4)+10+ ((resolution_region[0])<<4);
     while(val<100){
-        printf("Acquiring frame id %0d\n",val);
+        printf("Acquiring frame id %0d\n",val+1);
 		scaler = pow(2,(resolution_region[(val%4)]));
-    	sprintf(fn, "./myimage%0d.jpg", val);
+    	sprintf(fn, "/run/user/1000/images/m.jpg");
     	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
     	    perror("VIDIOC_STREAMON");
     	    exit(1);
@@ -154,10 +154,11 @@ int main(void){
 		//cvShowImage("main", dst);
 		//cvWaitKey(0);
 		//cvDestroyWindow("main");	
-		//cvReleaseImage(&src);
-		//cvReleaseImage(&bayer);
+		cvReleaseImage(&src);
+		cvReleaseImage(&bayer);
 		cvSaveImage(fn1, dst, 0);
-		//cvReleaseImage(&dst);
+		cvReleaseImage(&dst);
+		system("echo test > /run/user/1000/images/test.txt");
      }
          
      if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
