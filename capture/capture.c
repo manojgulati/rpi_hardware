@@ -96,21 +96,10 @@ int main(void){
      
     // Activate streaming
     type = bufferinfo.type;
-    //if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
-    //    perror("VIDIOC_STREAMON");
-    //    exit(1);
-    //}
-    // 
-    /* Here is where you typically start two loops:
-    * - One which runs for as long as you want to
-    *   capture frames (shoot the video).
-    * - One which iterates over your buffers everytime. */
-     
-    // Put the buffer in the incoming queue.
     printf("streaming\n");
     memset(&control, 0, sizeof(control));
     control.value=(val%4)+10+ ((resolution_region[0])<<4);
-    while(val<100){
+    while(val<5){
         printf("Acquiring frame id %0d\n",val+1);
 		scaler = pow(2,(resolution_region[(val%4)]));
     	sprintf(fn, "/run/user/1000/images/m.jpg");
@@ -138,8 +127,8 @@ int main(void){
             perror("VDIOC_S_CTRL");
             exit(1);
         }
-        roi.x = 0; //1200     // 950
-        roi.y = 0; //350      //150 
+        roi.x =0; //1200     // 950
+        roi.y =0; //350      //150 
         roi.width = 1200/scaler;  //2360          //2750
         roi.height = 800/scaler;  //1235 /2
 		bayer = cvCreateImage(sz, IPL_DEPTH_8U, 1);
@@ -149,11 +138,6 @@ int main(void){
         cvCopy(bayer, src);
 		dst = cvCreateImage(cvGetSize(src), IPL_DEPTH_8U, 3);
 		cvCvtColor(src, dst, CV_BayerRG2BGR);
-		//cvNamedWindow("main", CV_WINDOW_AUTOSIZE);
-		//cvMoveWindow("main", 10, 10);
-		//cvShowImage("main", dst);
-		//cvWaitKey(0);
-		//cvDestroyWindow("main");	
 		cvReleaseImage(&src);
 		cvReleaseImage(&bayer);
 		cvSaveImage(fn1, dst, 0);

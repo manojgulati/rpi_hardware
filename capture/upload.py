@@ -17,25 +17,15 @@ def on_message(client, userdata, msg):
 
 def convertImageToBase64():
 	with open("/run/user/1000/images/m.jpg", "rb") as image_file:
-		encoded = base64.b64encode(image_file.read())
+		val=image_file.read()
+		encoded = base64.b64encode(val)
+		print encoded
 		return encoded
 def randomword(length):
 	return ''.join(random.choice(string.lowercase) for i in range(length))
 packet_size=3000
-
 def publishEncodedImage(encoded):
-	end = packet_size
-	start = 0
-	length = len(encoded)
-	picId = randomword(8)
-	pos = 0
-	no_of_packets = math.ceil(length/packet_size)
-	while start <= len(encoded):
-		data = {"data": encoded[start:end], "pic_id":picId, "pos": pos, "size": no_of_packets}
-		client.publish("apple", json.JSONEncoder().encode(data))
-		end += packet_size
-		start += packet_size
-		pos = pos +1
+	client.publish("apple",encoded)
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
@@ -47,5 +37,5 @@ while True:
 		dur = os.path.getmtime('/run/user/1000/images/test.txt')
 		encoded = convertImageToBase64()
 		publishEncodedImage(encoded)
-		client.publish("apple","file updated "+str(count))
+		#client.publish("apple","file updated "+str(count))
 		count+=1
