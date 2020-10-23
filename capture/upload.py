@@ -6,6 +6,9 @@ import base64
 import json
 import random,string
 # The callback for when the client receives a CONNACK response from the server.
+os.system("rm -rf /run/user/1000/images")
+os.system("mkdir /run/user/1000/images")
+os.system("echo test > /run/user/1000/images/test.txt")
 def on_connect(client, userdata, flags, rc):
 	print("Connected with result code "+str(rc))
 	# Subscribing in on_connect() means that if we lose the connection and
@@ -19,7 +22,7 @@ def convertImageToBase64():
 	with open("/run/user/1000/images/m.jpg", "rb") as image_file:
 		val=image_file.read()
 		encoded = base64.b64encode(val)
-		print encoded
+		#print encoded
 		return encoded
 def randomword(length):
 	return ''.join(random.choice(string.lowercase) for i in range(length))
@@ -29,7 +32,7 @@ def publishEncodedImage(encoded):
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect("192.168.1.38", 1883, 60)
+client.connect("192.168.43.221", 1883, 60)
 dur = os.path.getmtime('/run/user/1000/images/test.txt')
 count=0
 while True:
@@ -37,5 +40,5 @@ while True:
 		dur = os.path.getmtime('/run/user/1000/images/test.txt')
 		encoded = convertImageToBase64()
 		publishEncodedImage(encoded)
-		#client.publish("apple","file updated "+str(count))
+		client.publish("apple","file updated "+str(count))
 		count+=1

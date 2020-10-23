@@ -13,10 +13,12 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <chrono>
+#include <iostream>
 #define CV_NO_BACKWARD_COMPATIBILITY
 #include <cv.h>
 #include <highgui.h>
+#define switch_stream
 int main(void){
     int fd;
     int val = 0;
@@ -92,21 +94,29 @@ int main(void){
         perror("mmap");
         exit(1);
     }
-     
+#ifndef switch_stream     
+    	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
+    	    perror("VIDIOC_STREAMON");
+    	    exit(1);
+    	}
+#endif
      
     // Activate streaming
     type = bufferinfo.type;
     printf("streaming\n");
     memset(&control, 0, sizeof(control));
     control.value=(val%4)+10+ ((resolution_region[0])<<4);
-    while(val<5){
+    while(val<500){
+ 		auto t1 = std::chrono::high_resolution_clock::now();
         printf("Acquiring frame id %0d\n",val+1);
 		scaler = pow(2,(resolution_region[(val%4)]));
     	sprintf(fn, "/run/user/1000/images/m.jpg");
+#ifdef switch_stream
     	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
     	    perror("VIDIOC_STREAMON");
     	    exit(1);
     	}
+#endif
         // The buffer's waiting in the outgoing queue.
         if(ioctl(fd, VIDIOC_QBUF, &bufferinfo) < 0){
             perror("VIDIOC_QBUF");
@@ -116,9 +126,11 @@ int main(void){
             perror("VIDIOC_QBUF");
             exit(1);
         }
+#ifdef switch_stream
      if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){ perror("VIDIOC_STREAMOFF");
         exit(1);
      }
+#endif
         val++;
         control.id = V4L2_CID_TEST_PATTERN_RED;
         control.value=(val%4)+10+ ((resolution_region[(val%4)])<<4);
@@ -130,7 +142,7 @@ int main(void){
         roi.x =0; //1200     // 950
         roi.y =0; //350      //150 
         roi.width = 1200/scaler;  //2360          //2750
-        roi.height = 800/scaler;  //1235 /2
+        roi.height =800/scaler;  //1235 /2
 		bayer = cvCreateImage(sz, IPL_DEPTH_8U, 1);
 		bayer->imageData = (char *)(buffer_start);
 		src = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 1);
@@ -143,15 +155,18 @@ int main(void){
 		cvSaveImage(fn1, dst, 0);
 		cvReleaseImage(&dst);
 		system("echo test > /run/user/1000/images/test.txt");
+		auto t2 = std::chrono::high_resolution_clock::now();
+ 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+ 		while( duration <250000){
+			t2 = std::chrono::high_resolution_clock::now();
+ 			duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+		}
+    	std::cout << duration<<std::endl;
      }
-         
      if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
         perror("VIDIOC_STREAMOFF");
         exit(1);
      }
-             
-            // ...
-         
      close(fd);
     return EXIT_SUCCESS;
 }
