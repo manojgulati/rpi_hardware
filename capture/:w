@@ -16,10 +16,9 @@
 #include <chrono>
 #include <iostream>
 #define CV_NO_BACKWARD_COMPATIBILITY
-#define jpeg
 #include <cv.h>
 #include <highgui.h>
-#define switch_stream
+//#define switch_stream
 int main(void){
     int fd;
     int val = 0;
@@ -34,7 +33,7 @@ int main(void){
     struct v4l2_buffer bufferinfo;
 	int resx[15] = { 1200, 1100, 900, 900, 800, 700,  600, 600, 512 , 440, 360, 224, 160, 96, 70};
     int resy[15] = { 800,  800,  900, 800, 800, 800 , 800, 600, 512 , 440, 360, 224, 160, 96, 70};
-	int res=0;
+	int res=3;
 
 	CvSize sz = { 1920, 1080 };
 	cv::Rect roi;
@@ -99,7 +98,6 @@ int main(void){
         perror("mmap");
         exit(1);
     }
-    type = bufferinfo.type;
 #ifndef switch_stream     
     	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
     	    perror("VIDIOC_STREAMON");
@@ -108,16 +106,11 @@ int main(void){
 #endif
      
     // Activate streaming
+    type = bufferinfo.type;
     printf("streaming\n");
     memset(&control, 0, sizeof(control));
-    control.value=0;//(val%4)+10+ ((resolution_region[0])<<4);
-        control.id = V4L2_CID_TEST_PATTERN_RED;
-        if(ioctl(fd, VIDIOC_S_CTRL, &control) < 0){
-            perror("VDIOC_S_CTRL");
-            exit(1);
-        }
-    while(val<15){
-		res=val;
+    control.value=res;//(val%4)+10+ ((resolution_region[0])<<4);
+    while(val<500){
  		auto t1 = std::chrono::high_resolution_clock::now();
         printf("Acquiring frame id %0d\n",val+1);
 		scaler = pow(2,(resolution_region[(val%4)]));
@@ -129,8 +122,6 @@ int main(void){
     	}
 #endif
         // The buffer's waiting in the outgoing queue.
-	for(int val=0;val<4;val++) 
-	{
         if(ioctl(fd, VIDIOC_QBUF, &bufferinfo) < 0){
             perror("VIDIOC_QBUF");
             exit(1);
@@ -138,8 +129,7 @@ int main(void){
         if(ioctl(fd, VIDIOC_DQBUF, &bufferinfo) < 0){
             perror("VIDIOC_QBUF");
             exit(1);
-    	}
-	}
+        }
 #ifdef switch_stream
      if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){ perror("VIDIOC_STREAMOFF");
         exit(1);
@@ -153,7 +143,6 @@ int main(void){
             perror("VDIOC_S_CTRL");
             exit(1);
         }
-		#ifdef jpeg
         roi.x =0; //1200     // 950
         roi.y =0; //350      //150 
         roi.width = resx[res];  //2360          //2750
@@ -177,7 +166,6 @@ int main(void){
  			duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
 		}
     	std::cout << duration<<std::endl;
-		#endif
      }
      if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
         perror("VIDIOC_STREAMOFF");
