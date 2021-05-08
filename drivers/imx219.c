@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: GPL-2.0
 /*
  * A V4L2 driver for Sony IMX219 cameras.
@@ -16,8 +15,6 @@
  */
 
 #include <linux/clk.h>
-#include <linux/clk-provider.h>
-#include <linux/clkdev.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
@@ -113,16 +110,6 @@
 #define IMX219_TESTP_BLUE_DEFAULT	0
 #define IMX219_TESTP_GREENB_DEFAULT	0
 
-/* Embedded metadata stream structure */
-#define IMX219_EMBEDDED_LINE_WIDTH 16384
-#define IMX219_NUM_EMBEDDED_LINES 1
-#define dumpfunc
-enum pad_types {
-	IMAGE_PAD,
-	METADATA_PAD,
-	NUM_PADS
-};
-
 /* IMX219 native and active pixel array size. */
 #define IMX219_NATIVE_WIDTH		3296U
 #define IMX219_NATIVE_HEIGHT		2480U
@@ -130,6 +117,16 @@ enum pad_types {
 #define IMX219_PIXEL_ARRAY_TOP		8U
 #define IMX219_PIXEL_ARRAY_WIDTH	3280U
 #define IMX219_PIXEL_ARRAY_HEIGHT	2464U
+
+/* Embedded metadata stream structure */
+#define IMX219_EMBEDDED_LINE_WIDTH 16384
+#define IMX219_NUM_EMBEDDED_LINES 1
+
+enum pad_types {
+	IMAGE_PAD,
+	METADATA_PAD,
+	NUM_PADS
+};
 
 struct imx219_reg {
 	u16 address;
@@ -234,20 +231,20 @@ static const struct imx219_reg mode_1920_1080_regs[] = {
 	{0x012b, 0x00},
 	{0x0162, 0x0d},
 	{0x0163, 0x78},
-	{0x0164, 0x00},
-	{0x0165, 0x00},
-	{0x0166, 0x04},
-	{0x0167, 0xaf},
-	{0x0168, 0x00},
-	{0x0169, 0x00},
-	{0x016a, 0x03},
-	{0x016b, 0x1f},
-	{0x016c, 0x04},
-	{0x016d, 0xb0},
-	{0x016e, 0x03},
-	{0x016f, 0x20},
+	{0x0164, 0x02},
+	{0x0165, 0xa8},
+	{0x0166, 0x0a},
+	{0x0167, 0x27},
+	{0x0168, 0x02},
+	{0x0169, 0xb4},
+	{0x016a, 0x06},
+	{0x016b, 0xeb},
+	{0x016c, 0x07},
+	{0x016d, 0x80},
+	{0x016e, 0x04},
+	{0x016f, 0x38},
 	{0x0170, 0x01},
-    {0x0171, 0x01},
+	{0x0171, 0x01},
 	{0x0174, 0x00},
 	{0x0175, 0x00},
 	{0x0301, 0x05},
@@ -486,8 +483,8 @@ static const struct imx219_mode supported_modes[] = {
 		.width = 3280,
 		.height = 2464,
 		.crop = {
-			.left = 0,
-			.top = 0,
+			.left = IMX219_PIXEL_ARRAY_LEFT,
+			.top = IMX219_PIXEL_ARRAY_TOP,
 			.width = 3280,
 			.height = 2464
 		},
@@ -502,8 +499,8 @@ static const struct imx219_mode supported_modes[] = {
 		.width = 1920,
 		.height = 1080,
 		.crop = {
-			.left = 680,
-			.top = 692,
+			.left = 688,
+			.top = 700,
 			.width = 1920,
 			.height = 1080
 		},
@@ -518,8 +515,8 @@ static const struct imx219_mode supported_modes[] = {
 		.width = 1640,
 		.height = 1232,
 		.crop = {
-			.left = 0,
-			.top = 0,
+			.left = IMX219_PIXEL_ARRAY_LEFT,
+			.top = IMX219_PIXEL_ARRAY_TOP,
 			.width = 3280,
 			.height = 2464
 		},
@@ -534,8 +531,8 @@ static const struct imx219_mode supported_modes[] = {
 		.width = 640,
 		.height = 480,
 		.crop = {
-			.left = 1000,
-			.top = 752,
+			.left = 1008,
+			.top = 760,
 			.width = 1280,
 			.height = 960
 		},
@@ -624,6 +621,7 @@ static int imx219_write_reg(struct imx219 *imx219, u16 reg, u32 len, u32 val)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	u8 buf[6];
+
 	if (len > 4)
 		return -EINVAL;
 
@@ -642,6 +640,7 @@ static int imx219_write_regs(struct imx219 *imx219,
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	unsigned int i;
 	int ret;
+
 	for (i = 0; i < len; i++) {
 		ret = imx219_write_reg(imx219, regs[i].address, 1, regs[i].val);
 		if (ret) {
@@ -660,9 +659,7 @@ static int imx219_write_regs(struct imx219 *imx219,
 static u32 imx219_get_format_code(struct imx219 *imx219, u32 code)
 {
 	unsigned int i;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	lockdep_assert_held(&imx219->mutex);
 
 	for (i = 0; i < ARRAY_SIZE(codes); i++)
@@ -681,9 +678,7 @@ static u32 imx219_get_format_code(struct imx219 *imx219, u32 code)
 static void imx219_set_default_format(struct imx219 *imx219)
 {
 	struct v4l2_mbus_framefmt *fmt;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	fmt = &imx219->fmt;
 	fmt->code = MEDIA_BUS_FMT_SRGGB10_1X10;
 	fmt->colorspace = V4L2_COLORSPACE_SRGB;
@@ -705,11 +700,9 @@ static int imx219_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	struct v4l2_mbus_framefmt *try_fmt_meta =
 		v4l2_subdev_get_try_format(sd, fh->pad, METADATA_PAD);
 	struct v4l2_rect *try_crop;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	mutex_lock(&imx219->mutex);
-	
+
 	/* Initialize try_fmt for the image pad */
 	try_fmt_img->width = supported_modes[0].width;
 	try_fmt_img->height = supported_modes[0].height;
@@ -734,24 +727,17 @@ static int imx219_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 	return 0;
 }
-int rs  = 2;
-int rs1 = 0;
-int x_inc,y_inc;
+
 static int imx219_set_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct imx219 *imx219 =
 		container_of(ctrl->handler, struct imx219, ctrl_handler);
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	int ret;
-	int resx[15] = { 1200, 1100, 900, 900, 800, 700,  600, 600, 512 , 440, 360, 224, 160, 96, 70}; 
-	int resy[15] = { 800,  800,  900, 800, 800, 800 , 800, 600, 512 , 440, 360, 224, 160, 96, 70};
-	#ifdef dumpfunc
-    printk( KERN_INFO "rs %0d\n",rs);
-	#endif
-	//imx219_write_reg(imx219, 0x016d,IMX219_REG_VALUE_08BIT,rs);
-	//imx219_write_reg(imx219, 0x016c,IMX219_REG_VALUE_08BIT,rs1);
+
 	if (ctrl->id == V4L2_CID_VBLANK) {
 		int exposure_max, exposure_def;
+
 		/* Update max exposure while meeting expected vblanking */
 		exposure_max = imx219->mode->height + ctrl->val - 4;
 		exposure_def = (exposure_max < IMX219_EXPOSURE_DEFAULT) ?
@@ -763,7 +749,7 @@ static int imx219_set_ctrl(struct v4l2_ctrl *ctrl)
 	}
 
 	/*
-	 * Applying V4L2 control valppens
+	 * Applying V4L2 control value only happens
 	 * when power is up for streaming
 	 */
 	if (pm_runtime_get_if_in_use(&client->dev) == 0)
@@ -773,19 +759,16 @@ static int imx219_set_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_ANALOGUE_GAIN:
 		ret = imx219_write_reg(imx219, IMX219_REG_ANALOG_GAIN,
 				       IMX219_REG_VALUE_08BIT, ctrl->val);
-        printk(KERN_INFO "analogue gain fuck%0d\n",ctrl->val);
 		break;
 	case V4L2_CID_EXPOSURE:
-        printk(KERN_INFO "exposure fuck%0d\n",ctrl->val);
 		ret = imx219_write_reg(imx219, IMX219_REG_EXPOSURE,
 				       IMX219_REG_VALUE_16BIT, ctrl->val);
 		break;
 	case V4L2_CID_DIGITAL_GAIN:
-        printk(KERN_INFO "digital gain gain fuck%0d\n",ctrl->val);
 		ret = imx219_write_reg(imx219, IMX219_REG_DIGITAL_GAIN,
-				       IMX219_REG_VALUE_16BIT, 256); break; case V4L2_CID_TEST_PATTERN:
-        rs1 = 2-rs1;
-        printk(KERN_INFO "test pattern fuck%0d\n",ctrl->val);
+				       IMX219_REG_VALUE_16BIT, ctrl->val);
+		break;
+	case V4L2_CID_TEST_PATTERN:
 		ret = imx219_write_reg(imx219, IMX219_REG_TEST_PATTERN,
 				       IMX219_REG_VALUE_16BIT,
 				       imx219_test_pattern_val[ctrl->val]);
@@ -797,22 +780,13 @@ static int imx219_set_ctrl(struct v4l2_ctrl *ctrl)
 				       imx219->vflip->val << 1);
 		break;
 	case V4L2_CID_VBLANK:
-        printk(KERN_INFO "vblank fuck%0d\n",ctrl->val);
 		ret = imx219_write_reg(imx219, IMX219_REG_VTS,
 				       IMX219_REG_VALUE_16BIT,
 				       imx219->mode->height + ctrl->val);
 		break;
 	case V4L2_CID_TEST_PATTERN_RED:
-	    imx219_write_reg(imx219, 0x0174,IMX219_REG_VALUE_08BIT,0);
-	    imx219_write_reg(imx219, 0x0175,IMX219_REG_VALUE_08BIT,0);
-	    imx219_write_reg(imx219, 0x0164,IMX219_REG_VALUE_16BIT,0);
-	    imx219_write_reg(imx219, 0x0166,IMX219_REG_VALUE_16BIT,resx[ctrl->val]);
-	    imx219_write_reg(imx219, 0x0168,IMX219_REG_VALUE_16BIT,0);
-	    imx219_write_reg(imx219, 0x016a,IMX219_REG_VALUE_16BIT,resy[ctrl->val]);
-        printk(KERN_INFO "test pattern red fuck%0d\n",ctrl->val);
-		//ret = imx219_write_reg(imx219, IMX219_REG_TESTP_RED,
-		//		       IMX219_REG_VALUE_16BIT, ctrl->val);
-        ret =0;
+		ret = imx219_write_reg(imx219, IMX219_REG_TESTP_RED,
+				       IMX219_REG_VALUE_16BIT, ctrl->val);
 		break;
 	case V4L2_CID_TEST_PATTERN_GREENR:
 		ret = imx219_write_reg(imx219, IMX219_REG_TESTP_GREENR,
@@ -848,20 +822,20 @@ static int imx219_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
 	struct imx219 *imx219 = to_imx219(sd);
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	if (code->pad >= NUM_PADS)
 		return -EINVAL;
 
 	if (code->pad == IMAGE_PAD) {
 		if (code->index >= (ARRAY_SIZE(codes) / 4))
 			return -EINVAL;
+
 		code->code = imx219_get_format_code(imx219,
 						    codes[code->index * 4]);
 	} else {
 		if (code->index > 0)
 			return -EINVAL;
+
 		code->code = MEDIA_BUS_FMT_SENSOR_DATA;
 	}
 
@@ -873,9 +847,7 @@ static int imx219_enum_frame_size(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
 	struct imx219 *imx219 = to_imx219(sd);
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	if (fse->pad >= NUM_PADS)
 		return -EINVAL;
 
@@ -905,9 +877,6 @@ static int imx219_enum_frame_size(struct v4l2_subdev *sd,
 
 static void imx219_reset_colorspace(struct v4l2_mbus_framefmt *fmt)
 {
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 	fmt->colorspace = V4L2_COLORSPACE_SRGB;
 	fmt->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
 	fmt->quantization = V4L2_MAP_QUANTIZATION_DEFAULT(true,
@@ -920,9 +889,6 @@ static void imx219_update_image_pad_format(struct imx219 *imx219,
 					   const struct imx219_mode *mode,
 					   struct v4l2_subdev_format *fmt)
 {
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 	fmt->format.width = mode->width;
 	fmt->format.height = mode->height;
 	fmt->format.field = V4L2_FIELD_NONE;
@@ -941,9 +907,6 @@ static int __imx219_get_pad_format(struct imx219 *imx219,
 				   struct v4l2_subdev_pad_config *cfg,
 				   struct v4l2_subdev_format *fmt)
 {
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 	if (fmt->pad >= NUM_PADS)
 		return -EINVAL;
 
@@ -975,9 +938,6 @@ static int imx219_get_pad_format(struct v4l2_subdev *sd,
 {
 	struct imx219 *imx219 = to_imx219(sd);
 	int ret;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 
 	mutex_lock(&imx219->mutex);
 	ret = __imx219_get_pad_format(imx219, cfg, fmt);
@@ -995,8 +955,6 @@ static int imx219_set_pad_format(struct v4l2_subdev *sd,
 	struct v4l2_mbus_framefmt *framefmt;
 	int exposure_max, exposure_def, hblank;
 	unsigned int i;
-	#ifdef dumpfunc
-	#endif
 
 	if (fmt->pad >= NUM_PADS)
 		return -EINVAL;
@@ -1013,10 +971,7 @@ static int imx219_set_pad_format(struct v4l2_subdev *sd,
 		/* Bayer order varies with flips */
 		fmt->format.code = imx219_get_format_code(imx219, codes[i]);
 
-        printk( KERN_INFO "currrent function %s %0d %0d\n", __func__, fmt->format.width,fmt->format.height);
-        imx219_write_reg(imx219, IMX219_REG_EXPOSURE,
-				       IMX219_REG_VALUE_16BIT, 1759);
-		mode = v4l2_find_nearest_size(supported_modes ,
+		mode = v4l2_find_nearest_size(supported_modes,
 					      ARRAY_SIZE(supported_modes),
 					      width, height,
 					      fmt->format.width,
@@ -1078,9 +1033,6 @@ static int imx219_set_pad_format(struct v4l2_subdev *sd,
 
 static int imx219_set_framefmt(struct imx219 *imx219)
 {
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 	switch (imx219->fmt.code) {
 	case MEDIA_BUS_FMT_SRGGB8_1X8:
 	case MEDIA_BUS_FMT_SGRBG8_1X8:
@@ -1104,9 +1056,6 @@ static const struct v4l2_rect *
 __imx219_get_pad_crop(struct imx219 *imx219, struct v4l2_subdev_pad_config *cfg,
 		      unsigned int pad, enum v4l2_subdev_format_whence which)
 {
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
 		return v4l2_subdev_get_try_crop(&imx219->sd, cfg, pad);
@@ -1121,9 +1070,6 @@ static int imx219_get_selection(struct v4l2_subdev *sd,
 				struct v4l2_subdev_pad_config *cfg,
 				struct v4l2_subdev_selection *sel)
 {
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 	switch (sel->target) {
 	case V4L2_SEL_TGT_CROP: {
 		struct imx219 *imx219 = to_imx219(sd);
@@ -1145,6 +1091,7 @@ static int imx219_get_selection(struct v4l2_subdev *sd,
 		return 0;
 
 	case V4L2_SEL_TGT_CROP_DEFAULT:
+	case V4L2_SEL_TGT_CROP_BOUNDS:
 		sel->r.top = IMX219_PIXEL_ARRAY_TOP;
 		sel->r.left = IMX219_PIXEL_ARRAY_LEFT;
 		sel->r.width = IMX219_PIXEL_ARRAY_WIDTH;
@@ -1161,9 +1108,6 @@ static int imx219_start_streaming(struct imx219 *imx219)
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	const struct imx219_reg_list *reg_list;
 	int ret;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 
 	/* Apply default values of current mode */
 	reg_list = &imx219->mode->reg_list;
@@ -1194,10 +1138,6 @@ static void imx219_stop_streaming(struct imx219 *imx219)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	int ret;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
-	//printk(KERN_INFO "stop streaming\n");
 
 	/* set stream off register */
 	ret = imx219_write_reg(imx219, IMX219_REG_MODE_SELECT,
@@ -1211,9 +1151,7 @@ static int imx219_set_stream(struct v4l2_subdev *sd, int enable)
 	struct imx219 *imx219 = to_imx219(sd);
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int ret = 0;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	mutex_lock(&imx219->mutex);
 	if (imx219->streaming == enable) {
 		mutex_unlock(&imx219->mutex);
@@ -1264,9 +1202,7 @@ static int imx219_power_on(struct device *dev)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx219 *imx219 = to_imx219(sd);
 	int ret;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	ret = regulator_bulk_enable(IMX219_NUM_SUPPLIES,
 				    imx219->supplies);
 	if (ret) {
@@ -1299,9 +1235,7 @@ static int imx219_power_off(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx219 *imx219 = to_imx219(sd);
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	gpiod_set_value_cansleep(imx219->reset_gpio, 0);
 	regulator_bulk_disable(IMX219_NUM_SUPPLIES, imx219->supplies);
 	clk_disable_unprepare(imx219->xclk);
@@ -1314,9 +1248,7 @@ static int __maybe_unused imx219_suspend(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx219 *imx219 = to_imx219(sd);
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	if (imx219->streaming)
 		imx219_stop_streaming(imx219);
 
@@ -1329,9 +1261,6 @@ static int __maybe_unused imx219_resume(struct device *dev)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx219 *imx219 = to_imx219(sd);
 	int ret;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 
 	if (imx219->streaming) {
 		ret = imx219_start_streaming(imx219);
@@ -1343,7 +1272,7 @@ static int __maybe_unused imx219_resume(struct device *dev)
 
 error:
 	imx219_stop_streaming(imx219);
-	imx219->streaming = 0;
+	imx219->streaming = false;
 
 	return ret;
 }
@@ -1352,9 +1281,6 @@ static int imx219_get_regulators(struct imx219 *imx219)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	unsigned int i;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 
 	for (i = 0; i < IMX219_NUM_SUPPLIES; i++)
 		imx219->supplies[i].supply = imx219_supply_name[i];
@@ -1370,9 +1296,6 @@ static int imx219_identify_module(struct imx219 *imx219)
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	int ret;
 	u32 val;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 
 	ret = imx219_read_reg(imx219, IMX219_REG_CHIP_ID,
 			      IMX219_REG_VALUE_16BIT, &val);
@@ -1427,13 +1350,9 @@ static int imx219_init_controls(struct imx219 *imx219)
 	struct v4l2_fwnode_device_properties props;
 	int exposure_max, exposure_def, hblank;
 	int i, ret;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 
 	ctrl_hdlr = &imx219->ctrl_handler;
 	ret = v4l2_ctrl_handler_init(ctrl_hdlr, 11);
-	
 	if (ret)
 		return ret;
 
@@ -1534,9 +1453,6 @@ error:
 
 static void imx219_free_controls(struct imx219 *imx219)
 {
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 	v4l2_ctrl_handler_free(imx219->sd.ctrl_handler);
 	mutex_destroy(&imx219->mutex);
 }
@@ -1548,9 +1464,7 @@ static int imx219_check_hwcfg(struct device *dev)
 		.bus_type = V4L2_MBUS_CSI2_DPHY
 	};
 	int ret = -EINVAL;
-		#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif 
+
 	endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
 	if (!endpoint) {
 		dev_err(dev, "endpoint node not found\n");
@@ -1595,9 +1509,7 @@ static int imx219_probe(struct i2c_client *client)
 	struct device *dev = &client->dev;
 	struct imx219 *imx219;
 	int ret;
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
+
 	imx219 = devm_kzalloc(&client->dev, sizeof(*imx219), GFP_KERNEL);
 	if (!imx219)
 		return -ENOMEM;
@@ -1716,9 +1628,6 @@ static int imx219_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx219 *imx219 = to_imx219(sd);
-	#ifdef dumpfunc
-    printk( KERN_INFO "currrent function %s\n", __func__);
-	#endif
 
 	v4l2_async_unregister_subdev(sd);
 	media_entity_cleanup(&sd->entity);

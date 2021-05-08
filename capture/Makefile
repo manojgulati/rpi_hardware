@@ -5,7 +5,7 @@ CXXFLAGS += `pkg-config opencv --cflags`
 
 LDFLAGS += `pkg-config opencv --libs`
 
-TARGET = capture_t
+TARGET = capture
 
 $(TARGET): $(TARGET).c
 	$(CC) $(CFLAGS) $(CXXFLAGS) $(LDFLAGS) $(TARGET).c -o $(TARGET)
