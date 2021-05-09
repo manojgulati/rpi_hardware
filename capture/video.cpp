@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
+#include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -17,18 +19,36 @@
 #include <iostream>
 #define CV_NO_BACKWARD_COMPATIBILITY
 //#define jpeg
-#include <cv.h>
-#include <highgui.h>
+//#include <cv.h>
+//#include <highgui.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #define switch_stream
+using namespace std;
+using namespace cv;
 int main(int argc, char** argv){
     int fd;
     int val = 0;
 	int scaler=1;
+    vector<uchar> buf;  
 	int resolution_region[4]= {0,0,0,0};
 	int type;
+    int x1,x2,y1,y2;
     int p[3];
     float delay;
+    int height=1080;
+    int width=1920;
+    Size S;
+    const string filename="/run/user/1000/images/test.avi";
+    int fourcc = VideoWriter::fourcc('M','J','P','G');
+    //int fourcc = VideoWriter::fourcc('D','I','V','X');
+    double fps= 4;
+    
+    VideoWriter writer;
+    VideoWriter writer2;
 	IplImage *src,*dst,*src1,*src2,*src3,*src4;
+
+    Mat wFrame;
     struct v4l2_control control;
     struct v4l2_format format;
     struct v4l2_capability cap;
@@ -122,6 +142,21 @@ int main(int argc, char** argv){
             perror("VDIOC_S_CTRL");
             exit(1);
         }
+    
+    if(shared_region==0){
+        S = Size(width,height);
+        //writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+        writer.open("test.avi",fourcc,fps,S);
+    }
+    else
+    {
+        S = Size((width*shared_region)/(scale*100),height/scale);
+        //writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+        writer.open("test.avi",fourcc,fps,S);
+        S = Size(width-(width*shared_region)/100,height);
+        //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
+        writer2.open("test2.avi",fourcc,fps,S);
+    }
     while(val<iter){
 		res=0;
  		auto t1 = std::chrono::high_resolution_clock::now();
@@ -166,7 +201,6 @@ int main(int argc, char** argv){
 		src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
         cvCopy(bayer, src);
         if(shared_region==0){
-    	    sprintf(fn, "/run/user/1000/images/m.jpg");
             roi.x =0; //1200     // 950
             roi.y =0; //350      //150 
             roi.width = resx[0];  //2360          //2750
@@ -175,7 +209,11 @@ int main(int argc, char** argv){
 		    cvCvtColor(src, dst, CV_BayerRG2BGR);
 		    cvReleaseImage(&src);
 		    cvReleaseImage(&bayer);
-		    cvSaveImage(fn1, dst, p);
+            wFrame= cvarrToMat(dst);
+            writer.write(wFrame); 
+//            cv::imencode(".jpg", wFrame, buf, std::vector<int>());
+//            writer<<dst;
+		    //cvSaveImage(fn1, dst, p);
 		    cvReleaseImage(&dst);
         }
         else{
@@ -193,7 +231,9 @@ int main(int argc, char** argv){
 		    cvCvtColor(src1, dst, CV_BayerRG2BGR);
 		    cvReleaseImage(&src1);
 		    cvReleaseImage(&bayer);
-		    cvSaveImage(fn1, dst, p);
+            wFrame= cvarrToMat(dst);
+            writer.write(wFrame); 
+		    //cvSaveImage(fn1, dst, p);
 		    cvReleaseImage(&dst);
     	    sprintf(fn, "/run/user/1000/images/m2.jpg");
             roi.x =roi.width; //1200     // 950
@@ -203,13 +243,15 @@ int main(int argc, char** argv){
 		    cvCvtColor(src, dst, CV_BayerRG2BGR);
 		    cvReleaseImage(&src);
 		    cvReleaseImage(&bayer);
-		    cvSaveImage(fn1, dst, p);
+            wFrame= cvarrToMat(dst);
+            writer2.write(wFrame); 
+		    //cvSaveImage(fn1, dst, p);
 		    cvReleaseImage(&dst);
         }
 //        sleep(1);
 		auto t2 = std::chrono::high_resolution_clock::now();
  		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
-        delay = 480000- float(duration);
+        delay = 290000- float(duration);
     	std::cout << delay<<std::endl;
         usleep(delay);
  		//while( duration <250000){
@@ -217,6 +259,7 @@ int main(int argc, char** argv){
  		//	duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
 		//}
      }
+        writer.release();
      if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
         perror("VIDIOC_STREAMOFF");
         exit(1);

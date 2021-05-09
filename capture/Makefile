@@ -5,10 +5,10 @@ CXXFLAGS += `pkg-config opencv --cflags`
 
 LDFLAGS += `pkg-config opencv --libs`
 
-TARGET = capture
+TARGET = video
 
-$(TARGET): $(TARGET).c
-	$(CC) $(CFLAGS) $(CXXFLAGS) $(LDFLAGS) $(TARGET).c -o $(TARGET)
+$(TARGET): $(TARGET).cpp
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(LDFLAGS) $(TARGET).cpp -o $(TARGET)
 	
 	
 clean:
