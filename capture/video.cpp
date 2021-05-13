@@ -58,7 +58,7 @@ int main(int argc, char** argv){
     int resy[15] = { 1080,  800,  900, 800, 800, 800 , 800, 600, 512 , 440, 360, 224, 160, 96, 70};
 	int res=0;
     int shared_region=0;
-    int scale=8; 
+    int scale=4; 
     int iter;
 	CvSize sz = { 1920, 1080 };
 	cv::Rect roi;
@@ -69,6 +69,7 @@ int main(int argc, char** argv){
 	fn1 = (char *)&fn;
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);
+    system("echo r > running.re");
     if((fd = open("/dev/video0", O_RDWR)) < 0){
         perror("open");
         exit(1);
@@ -260,6 +261,7 @@ int main(int argc, char** argv){
 		//}
      }
         writer.release();
+    system("rm running.re");
      if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
         perror("VIDIOC_STREAMOFF");
         exit(1);

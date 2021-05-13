@@ -2,6 +2,7 @@ import os
 from time import sleep
 import socket
 from time import time
+import psutil
 file1='test.avi'
 file2='test2.avi'
 dur = os.path.getmtime(file1)
@@ -17,30 +18,38 @@ sock.connect((TCP_IP, TCP_PORT))
 def send_chuncks(data,lent):
         if(lent>0):
             size = str(len(data)).ljust(16).encode('utf-8')
-            print(size)
             sock.send(size)
             sock.send(data)
 lenss = 0
+started=0
 while True:
     t = time()
     if (dur != os.path.getmtime(file1)):
+        started=1
         dur = os.path.getmtime(file1)
         f = open(file1)
         f.seek(las)
-        l = f.read()
+        l = b'1'+f.read()
         las=f.tell()
         send_chuncks(l,len(l)) 
         lenss+=len(l)
         f.close()
     if (dur2 != os.path.getmtime(file2)):
+        started=1
         dur2 = os.path.getmtime(file2)
         f = open(file2)
         f.seek(las2)
-        l = f.read()
+        l = b'2'+f.read()
         las2=f.tell()
-        #send_chuncks(l,len(l)) 
+        send_chuncks(l,len(l)) 
         lenss+=len(l)
         f.close()
+    if(started and os.path.exists("running.re")):
+        pass
+    elif(started):
+        print("not running")
+        sock.close()
+        break
     delay =0.2 - (time()-t)
     if(delay<0):
         delay = 0
