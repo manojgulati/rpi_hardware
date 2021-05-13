@@ -2,8 +2,10 @@ import os
 from time import sleep
 import socket
 from time import time
-dur = os.path.getmtime('test.avi')
-dur2 = os.path.getmtime('test2.avi')
+file1='test.avi'
+file2='test2.avi'
+dur = os.path.getmtime(file1)
+dur2 = os.path.getmtime(file2)
 count=0
 las=0
 las2=0
@@ -27,27 +29,27 @@ def send_chuncks(data,lent):
 lenss = 0
 while True:
     t = time()
-    if (dur != os.path.getmtime('test.avi')):
-        print("avi1, updated")
-        dur = os.path.getmtime('test.avi')
-        f = open("test.avi")
+    if (dur != os.path.getmtime(file1)):
+#        print("avi1, updated")
+        dur = os.path.getmtime(file1)
+        f = open(file1)
         f.seek(las)
         l = f.read()
         las=f.tell()
         send_chuncks(l,len(l)) 
         lenss+=len(l)
         f.close()
-    if (dur2 != os.path.getmtime('test2.avi')):
-        print("avi2,updated")
-        dur2 = os.path.getmtime('test2.avi')
-        f = open("test2.avi")
+    if (dur2 != os.path.getmtime(file2)):
+#        print("avi2,updated")
+        dur2 = os.path.getmtime(file2)
+        f = open(file2)
         f.seek(las2)
         l = f.read()
         las2=f.tell()
         send_chuncks(l,len(l)) 
         lenss+=len(l)
         f.close()
-    delay = 0.20 - (time()-t)
+    delay =0.20 - (time()-t)
     if(delay<0):
         delay = 0
     sleep(delay)

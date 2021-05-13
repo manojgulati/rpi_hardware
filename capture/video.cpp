@@ -151,7 +151,7 @@ int main(int argc, char** argv){
     else
     {
         S = Size((width*shared_region)/(scale*100),height/scale);
-        //writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+//        writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
         writer.open("test.avi",fourcc,fps,S);
         S = Size(width-(width*shared_region)/100,height);
         //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
