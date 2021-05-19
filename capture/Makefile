@@ -5,7 +5,7 @@ CXXFLAGS += `pkg-config opencv --cflags`
 
 LDFLAGS += `pkg-config opencv --libs`
 
-TARGET = video
+TARGET = th_video
 
 $(TARGET): $(TARGET).cpp
 	$(CC) $(CFLAGS) $(CXXFLAGS) $(LDFLAGS) $(TARGET).cpp -o $(TARGET)

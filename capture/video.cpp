@@ -69,6 +69,8 @@ int main(int argc, char** argv){
 	fn1 = (char *)&fn;
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);
+    system("rm running.re");
+    sleep(0.5);
     system("echo r > running.re");
     if((fd = open("/dev/video0", O_RDWR)) < 0){
         perror("open");

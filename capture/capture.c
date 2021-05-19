@@ -210,7 +210,7 @@ int main(int argc, char** argv){
 		auto t2 = std::chrono::high_resolution_clock::now();
  		auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
         delay = 480000- float(duration);
-    	std::cout << delay<<std::endl;
+    	//std::cout << delay<<std::endl;
         usleep(delay);
  		//while( duration <250000){
 		//	t2 = std::chrono::high_resolution_clock::now();

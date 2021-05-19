@@ -10,8 +10,8 @@ dur2 = os.path.getmtime(file2)
 count=0
 las=0
 las2=0
-TCP_PORT = 5003
-TCP_IP = '192.168.86.54'
+TCP_PORT = 5002
+TCP_IP = '192.168.31.148'
 n=0
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
@@ -50,7 +50,8 @@ while True:
         print("not running")
         sock.close()
         break
-    delay =0.2 - (time()-t)
+    delay =0.10 - (time()-t)
     if(delay<0):
+        print(delay)
         delay = 0
     sleep(delay)
