@@ -31,8 +31,8 @@ int resolution_region[4]= {0,0,0,0};
 int type;
 void* buffer_start;
 int delay;
-int height=1080;
-int width=1920;
+int height=512;
+int width=512;
 Size S;
 const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
@@ -58,7 +58,7 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-int global_delay=200000;
+int global_delay=125000;
 void capture()
 {
     int val = 0;
@@ -111,6 +111,7 @@ void sync()
     while(frame_ready==0){
         usleep(1000);
     }
+    std::cout<<delay<<std::endl;
     usleep(delay);
 }
 void process()
@@ -128,9 +129,14 @@ void process()
         auto t1 = std::chrono::high_resolution_clock::now();
         if(frame_ready)
         {
+           roi.x =0; //1200     // 950
+           roi.y =0; //350      //150 
+           roi.width = resx[0];  //2360          //2750
+           roi.height = resy[0];  //1235 /2
             printf("processing %0d\n",val);
-	    	bayer = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+	    	bayer = cvCreateImage({1920,1080}, IPL_DEPTH_8U, 1);
 	    	bayer->imageData = (char *)(buffer_start);
+	    	cvSetImageROI(bayer, roi);
 	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
             cvCopy(bayer, src);
            // auto t3 = std::chrono::high_resolution_clock::now();
@@ -142,6 +148,7 @@ void process()
                 roi.y =0; //350      //150 
                 roi.width = resx[0];  //2360          //2750
                 roi.height = resy[0];  //1235 /2
+	    	    cvSetImageROI(src, roi);
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);
 	    	    cvReleaseImage(&src);

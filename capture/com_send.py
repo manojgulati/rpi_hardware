@@ -22,6 +22,7 @@ im_no2=0
 while True:
     t = time()
     if((started==0) and os.path.exists("running.re")):
+        print("started")
         started=1
         pass
     if (started):
@@ -43,8 +44,8 @@ while True:
         print("not running")
         sock.close()
         break
-    delay =0.125 - (time()-t)
+    delay =0.050 - (time()-t)
     if(delay<0):
-        print(delay)
+   #     print(delay)
         delay = 0
     sleep(delay)

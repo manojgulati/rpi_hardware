@@ -21,6 +21,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #define switch_stream
+//#define no_process
 #include <thread>
 using namespace std;
 using namespace cv;
@@ -31,8 +32,8 @@ int resolution_region[4]= {0,0,0,0};
 int type;
 void* buffer_start;
 int delay;
-int height=1080;
-int width=1080;
+int height=512;
+int width=512;
 Size S;
 const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
@@ -58,7 +59,7 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-int global_delay=125000;
+int global_delay=400000;
     char fn[32];
 	char *fn1;
 void capture()
@@ -131,15 +132,16 @@ void process()
         auto t1 = std::chrono::high_resolution_clock::now();
         if(frame_ready)
         {
+    #ifndef no_process
            roi.x =0; //1200     // 950
            roi.y =0; //350      //150 
            roi.width = resx[0];  //2360          //2750
            roi.height = resy[0];  //1235 /2
             printf("processing %0d\n",val);
-	    	bayer = cvCreateImage({1920,1080}, IPL_DEPTH_8U, 1);
-	    	bayer->imageData = (char *)(buffer_start);
-	    	cvSetImageROI(bayer, roi);
-	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+	        bayer = cvCreateImage({1920,1080}, IPL_DEPTH_8U, 1);
+	        bayer->imageData = (char *)(buffer_start);
+	        cvSetImageROI(bayer, roi);
+	        src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
             cvCopy(bayer, src);
            // auto t3 = std::chrono::high_resolution_clock::now();
  	       // auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t1 ).count();
@@ -152,8 +154,8 @@ void process()
                 roi.width = resx[0];  //2360          //2750
                 roi.height = resy[0];  //1235 /2
 		        cvSaveImage(fn1, src, 0);
-	    	    cvReleaseImage(&bayer);
-	    	    cvReleaseImage(&src);
+	            cvReleaseImage(&bayer);
+	            cvReleaseImage(&src);
             }
             else{
     	        sprintf(fn, "./images/m%0d.ppm",val);
@@ -162,25 +164,26 @@ void process()
                 roi.y =0; //350     //150 
                 roi.width = int(resx[0]*shared_region/100);  //2360          //2750
                 roi.height = resy[0];  //1235 
-	    	    cvSetImageROI(src, roi);
-	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+	            cvSetImageROI(src, roi);
+	            src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
                 cvCopy(src, src3);
                 
-	    	    src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
+	            src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
                 cvResize(src3,src1,CV_INTER_LINEAR);
 		        cvSaveImage(fn1, src1, 0);
-	    	    cvReleaseImage(&src1);
-	    	    cvReleaseImage(&src3);
+	            cvReleaseImage(&src1);
+	            cvReleaseImage(&src3);
 
     
     	        sprintf(fn, "./images/n%0d.ppm",val);
                 roi.x =roi.width; //1200     // 950
                 roi.width = resx[0]-roi.width;  //2360          //2750
-	    	    cvSetImageROI(src, roi);
+	            cvSetImageROI(src, roi);
 		        cvSaveImage(fn1, src, 0);
-	    	    cvReleaseImage(&bayer);
-	    	    cvReleaseImage(&src);
+	            cvReleaseImage(&bayer);
+	            cvReleaseImage(&src);
             }
+            #endif
             val+=1;
         }
         auto t2 = std::chrono::high_resolution_clock::now();

@@ -11,7 +11,7 @@ count=0
 las=0
 las2=0
 TCP_PORT = 5002
-TCP_IP = '192.168.31.148'
+TCP_IP = '192.168.18.13'
 n=0
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
@@ -50,7 +50,7 @@ while True:
         print("not running")
         sock.close()
         break
-    delay =0.10 - (time()-t)
+    delay =0.125 - (time()-t)
     if(delay<0):
         print(delay)
         delay = 0
