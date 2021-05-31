@@ -22,6 +22,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #define switch_stream
 #include <thread>
+//#define no_process
 using namespace std;
 using namespace cv;
 int fd;
@@ -31,8 +32,8 @@ int resolution_region[4]= {0,0,0,0};
 int type;
 void* buffer_start;
 int delay;
-int height=512;
-int width=512;
+int height=1056;
+int width=1056;
 Size S;
 const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
@@ -58,7 +59,7 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-int global_delay=125000;
+int global_delay=125000 ;
 void capture()
 {
     int val = 0;
@@ -98,6 +99,10 @@ void capture()
      auto t2 = std::chrono::high_resolution_clock::now();
      auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
      delay = global_delay- int(duration);
+    std::cout<<"capture "<<delay<<std::endl;
+    if(delay<0){
+        delay=0;
+    }
     // std::cout << delay<<std::endl;
      usleep(delay);
      if(done){
@@ -111,7 +116,8 @@ void sync()
     while(frame_ready==0){
         usleep(1000);
     }
-    std::cout<<delay<<std::endl;
+    if(delay<0)
+        delay =0;
     usleep(delay);
 }
 void process()
@@ -129,6 +135,8 @@ void process()
         auto t1 = std::chrono::high_resolution_clock::now();
         if(frame_ready)
         {
+    
+        #ifndef no_process
            roi.x =0; //1200     // 950
            roi.y =0; //350      //150 
            roi.width = resx[0];  //2360          //2750
@@ -185,6 +193,9 @@ void process()
                 writer2.write(wFrame); 
 	    	    cvReleaseImage(&dst);
             }
+            #else 
+                frame_ready=0;
+            #endif
             val+=1;
         }
         auto t2 = std::chrono::high_resolution_clock::now();
@@ -259,13 +270,13 @@ void setup()
     type = bufferinfo.type;
     if(shared_region==0){
         S = Size(width,height);
-//        writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+  //      writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
         writer.open("test.avi",fourcc,fps,S);
     }
     else
     {
         S = Size((width*shared_region)/(scale*100),height/scale);
-//        writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+    //    writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
         writer.open("test.avi",fourcc,fps,S);
         S = Size(width-(width*shared_region)/100,height);
         //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);

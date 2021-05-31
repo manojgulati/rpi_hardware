@@ -11,7 +11,7 @@ count=0
 las=0
 las2=0
 TCP_PORT = 5002
-TCP_IP = '192.168.18.13'
+TCP_IP = '192.168.1.148'
 n=0
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))

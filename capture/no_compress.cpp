@@ -59,7 +59,7 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-int global_delay=400000;
+int global_delay=100000;
     char fn[32];
 	char *fn1;
 void capture()

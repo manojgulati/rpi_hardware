@@ -13,7 +13,8 @@
  * Copyright (C) 2018 Intel Corporation
  *
  */
-
+#include <asm/div64.h>
+#include <linux/ktime.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
@@ -27,7 +28,6 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-mediabus.h>
 #include <asm/unaligned.h>
-
 #define IMX219_REG_VALUE_08BIT		1
 #define IMX219_REG_VALUE_16BIT		2
 
@@ -233,16 +233,16 @@ static const struct imx219_reg mode_1920_1080_regs[] = {
 	{0x0163, 0x78},
 	{0x0164, 0x02},
 	{0x0165, 0xa8},
-	{0x0166, 0x04},
-	{0x0167, 0xa7},
-	//{0x0166, 0x0a},
-	//{0x0167, 0x27},
+	//{0x0166, 0x04},
+	//{0x0167, 0xa7},
+	{0x0166, 0x0a},
+	{0x0167, 0x27},
 	{0x0168, 0x02},
 	{0x0169, 0xb4},
-	{0x016a, 0x04},
-	{0x016b, 0xb3},
-	//{0x016a, 0x06},
-	//{0x016b, 0xeb},
+	//{0x016a, 0x04},
+	//{0x016b, 0xb3},
+	{0x016a, 0x06},
+	{0x016b, 0xeb},
 	{0x016c, 0x07},
 	{0x016d, 0x80},
 	{0x016e, 0x04},
@@ -1112,10 +1112,14 @@ static int imx219_start_streaming(struct imx219 *imx219)
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
 	const struct imx219_reg_list *reg_list;
 	int ret;
+    ktime_t start_time,dura;
+    start_time = ktime_get();
 
 	/* Apply default values of current mode */
 	reg_list = &imx219->mode->reg_list;
 	ret = imx219_write_regs(imx219, reg_list->regs, reg_list->num_of_regs);
+    dura=(ktime_get()-start_time);
+    printk("fukkk, start streaming %0llu\n",dura);
 	if (ret) {
 		dev_err(&client->dev, "%s failed to set mode\n", __func__);
 		return ret;
@@ -1141,13 +1145,19 @@ static int imx219_start_streaming(struct imx219 *imx219)
 static void imx219_stop_streaming(struct imx219 *imx219)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&imx219->sd);
+    ktime_t start_time,dura;
 	int ret;
-
+    start_time=ktime_get();
 	/* set stream off register */
+    //usleep_range(1000*1000,1000*1000+10);
 	ret = imx219_write_reg(imx219, IMX219_REG_MODE_SELECT,
 			       IMX219_REG_VALUE_08BIT, IMX219_MODE_STANDBY);
 	if (ret)
 		dev_err(&client->dev, "%s failed to set stream\n", __func__);
+
+    dura=(ktime_get()-start_time);
+    printk("fukkk, stop streaming %0llu\n",dura);
+    //usleep_range(1000*1000,1000*1000+10);
 }
 
 static int imx219_set_stream(struct v4l2_subdev *sd, int enable)
@@ -1206,7 +1216,8 @@ static int imx219_power_on(struct device *dev)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx219 *imx219 = to_imx219(sd);
 	int ret;
-
+    ktime_t start_time,dura;
+    start_time = ktime_get();
 	ret = regulator_bulk_enable(IMX219_NUM_SUPPLIES,
 				    imx219->supplies);
 	if (ret) {
@@ -1225,12 +1236,14 @@ static int imx219_power_on(struct device *dev)
 	gpiod_set_value_cansleep(imx219->reset_gpio, 1);
 	usleep_range(IMX219_XCLR_MIN_DELAY_US,
 		     IMX219_XCLR_MIN_DELAY_US + IMX219_XCLR_DELAY_RANGE_US);
-
+    dura = ktime_get()-start_time;
+    printk("fukkk, power on %0llu\n",dura);
 	return 0;
 
 reg_off:
 	regulator_bulk_disable(IMX219_NUM_SUPPLIES, imx219->supplies);
 
+    dura=(ktime_get()-start_time);
 	return ret;
 }
 
@@ -1239,10 +1252,13 @@ static int imx219_power_off(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx219 *imx219 = to_imx219(sd);
+    ktime_t start_time;
+    start_time = ktime_get();
 
 	gpiod_set_value_cansleep(imx219->reset_gpio, 0);
 	regulator_bulk_disable(IMX219_NUM_SUPPLIES, imx219->supplies);
 	clk_disable_unprepare(imx219->xclk);
+    printk("fukkk, power off %0llu\n",ktime_get()-start_time);
 
 	return 0;
 }
