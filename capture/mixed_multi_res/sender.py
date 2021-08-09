@@ -2,6 +2,7 @@ import os
 from time import sleep
 import socket
 from time import time
+import psutil
 file1='test.avi'
 file2='test2.avi'
 dur = os.path.getmtime(file1)
@@ -9,47 +10,48 @@ dur2 = os.path.getmtime(file2)
 count=0
 las=0
 las2=0
-UDP_PORT = 5003
-UDP_IP = '192.168.86.112'
+TCP_PORT = 5003
+TCP_IP = '192.168.18.19'
 n=0
-sock = socket.socket(socket.AF_INET, # Internet
-                     socket.SOCK_DGRAM) # UDP
+sock = socket.socket()
+sock.connect((TCP_IP, TCP_PORT))
 def send_chuncks(data,lent):
-    global n
-    n+=1
-    i=-65000
-    for i in range(0,lent - (lent%65000),65000):
-        dt = data[i:i+65000]
-        sock.sendto(dt,(UDP_IP, UDP_PORT))
-        n+=1
-    if((lent%65000) != 0):
-        dt = data[i+65000:]
-        sock.sendto(dt,(UDP_IP, UDP_PORT))
-        n+=1
+        if(lent>0):
+            size = str(len(data)).ljust(16).encode('utf-8')
+            sock.send(size)
+            sock.send(data)
 lenss = 0
+started=0
 while True:
     t = time()
     if (dur != os.path.getmtime(file1)):
-#        print("avi1, updated")
+        started=1
         dur = os.path.getmtime(file1)
         f = open(file1)
         f.seek(las)
-        l = f.read()
+        l = b'1'+f.read()
         las=f.tell()
         send_chuncks(l,len(l)) 
         lenss+=len(l)
         f.close()
     if (dur2 != os.path.getmtime(file2)):
-#        print("avi2,updated")
+        started=1
         dur2 = os.path.getmtime(file2)
         f = open(file2)
         f.seek(las2)
-        l = f.read()
+        l = b'2'+f.read()
         las2=f.tell()
         send_chuncks(l,len(l)) 
         lenss+=len(l)
         f.close()
-    delay =0.2 - (time()-t)
+    if(started and os.path.exists("running.re")):
+        pass
+    elif(started):
+        print("not running")
+        sock.close()
+        break
+    delay =0.125 - (time()-t)
     if(delay<0):
+        print(delay)
         delay = 0
     sleep(delay)

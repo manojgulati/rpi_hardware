@@ -27,6 +27,7 @@ using namespace std;
 using namespace cv;
 int fd;
 int scaler=1;
+int regions = 3;
 vector<uchar> buf;  
 int resolution_region[4]= {0,0,0,0};
 int type;
@@ -41,6 +42,8 @@ int fourcc = VideoWriter::fourcc('M','J','P','G');
 double fps= 4;
 VideoWriter writer;
 VideoWriter writer2;
+VideoWriter writer3;
+VideoWriter writer4;
 IplImage *src,*dst,*src1,*src3;
 Mat wFrame;
 struct v4l2_control control;
@@ -51,7 +54,7 @@ struct v4l2_buffer bufferinfo;
 int resx[15] = { width, 1100, 900, 900, 800, 700,  600, 600, 512 , 440, 360, 224, 160, 96, 70};
 int resy[15] = { height,  800,  900, 800, 800, 800 , 800, 600, 512 , 440, 360, 224, 160, 96, 70};
 int shared_region=0;
-int scale=4; 
+int scale[4]= {1,1,1,1}; 
 int iter;
 CvSize sz = { width, height };
 cv::Rect roi;
@@ -151,7 +154,7 @@ void process()
  	       // auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t1 ).count();
            // std::cout << duration1<<std::endl;
             frame_ready=0;
-            if(shared_region==0){
+            if(regions ==1){
                 roi.x =0; //1200     // 950
                 roi.y =0; //350      //150 
                 roi.width = resx[0];  //2360          //2750
@@ -165,32 +168,160 @@ void process()
                 writer.write(wFrame);
 	    	    cvReleaseImage(&dst);
             }
-            else{
+            else if (regions==2){
                 roi.x =0; //1200    // 950
                 roi.y =0; //350     //150 
-                roi.width = int(resx[0]*shared_region/100);  //2360          //2750
+                roi.width = int(resx[0]/2);  //2360          //2750
                 roi.height = resy[0];  //1235 
 	    	    cvSetImageROI(src, roi);
 	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
                 cvCopy(src, src3);
-	    	    src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[0],roi.height/scale[0]), IPL_DEPTH_8U, 1);
                 cvResize(src3,src1,CV_INTER_LINEAR);
-	    	    dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
+	    	    dst = cvCreateImage({roi.width/scale[0],roi.height/scale[0]}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
 	    	    cvReleaseImage(&src1);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 writer.write(wFrame); 
 	    	    cvReleaseImage(&dst);
-                roi.x =roi.width; //1200     // 950
-                roi.width = resx[0]-roi.width;  //2360          //2750
+///////////////////////////////////////////////////////
+                roi.x =roi.width; //1200    // 950
+                roi.y =0; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = resy[0];  //1235 
 	    	    cvSetImageROI(src, roi);
-	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(int(roi.width/scale[1]),int(roi.height/scale[1])), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({int(roi.width/scale[1]),int(roi.height/scale[1])}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 writer2.write(wFrame); 
+	    	    cvReleaseImage(&dst);
+            }
+            else if (regions==3){
+                roi.x =0; //1200    // 950
+                roi.y =0; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = resy[0];  //1235 
+	    	    cvSetImageROI(src, roi);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[0],roi.height/scale[0]), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({roi.width/scale[0],roi.height/scale[0]}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
+	    	    cvReleaseImage(&bayer);
+                wFrame= cvarrToMat(dst);
+                writer.write(wFrame); 
+	    	    cvReleaseImage(&dst);
+///////////////////////////////////////////////////////
+                roi.x =resx[0]/2; //1200    // 950
+                roi.y =0; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = resy[0]/2;  //1235 
+	    	    cvSetImageROI(src, roi);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[1],roi.height/scale[1]), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({roi.width/scale[1],roi.height/scale[1]}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
+	    	    cvReleaseImage(&bayer);
+                wFrame= cvarrToMat(dst);
+                writer2.write(wFrame); 
+	    	    cvReleaseImage(&dst);
+///////////////////////////////////////////////////////
+                roi.x =resx[0]/2; //1200    // 950
+                roi.y =resy[0]/2; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = int(resy[0]/2);  //1235 
+	    	    cvSetImageROI(src, roi);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[2],roi.height/scale[2]), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({roi.width/scale[2],roi.height/scale[2]}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
+	    	    cvReleaseImage(&bayer);
+                wFrame= cvarrToMat(dst);
+                writer3.write(wFrame); 
+	    	    cvReleaseImage(&dst);
+            }
+            else if (regions==4){
+                roi.x =0; //1200    // 950
+                roi.y =0; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = resy[0]/2;  //1235 
+	    	    cvSetImageROI(src, roi);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[0],roi.height/scale[0]), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({roi.width/scale[0],roi.height/scale[0]}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
+	    	    cvReleaseImage(&bayer);
+                wFrame= cvarrToMat(dst);
+                writer.write(wFrame); 
+	    	    cvReleaseImage(&dst);
+///////////////////////////////////////////////////////
+                roi.x =0; //1200    // 950
+                roi.y =resy[0]/2; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = resy[0]/2;  //1235 
+	    	    cvSetImageROI(src, roi);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[1],roi.height/scale[1]), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({roi.width/scale[1],roi.height/scale[1]}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
+	    	    cvReleaseImage(&bayer);
+                wFrame= cvarrToMat(dst);
+                writer2.write(wFrame); 
+	    	    cvReleaseImage(&dst);
+///////////////////////////////////////////////////////
+                roi.x =resx[0]/2; //1200    // 950
+                roi.y =0; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = resy[0]/2;  //1235 
+	    	    cvSetImageROI(src, roi);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[2],roi.height/scale[2]), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({roi.width/scale[2],roi.height/scale[2]}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
+	    	    cvReleaseImage(&bayer);
+                wFrame= cvarrToMat(dst);
+                writer3.write(wFrame); 
+	    	    cvReleaseImage(&dst);
+///////////////////////////////////////////////////////
+                roi.x =resx[0]/2; //1200    // 950
+                roi.y =resy[0]/2; //350     //150 
+                roi.width = int(resx[0]/2);  //2360          //2750
+                roi.height = int(resy[0]/2);  //1235 
+	    	    cvSetImageROI(src, roi);
+	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                cvCopy(src, src3);
+	    	    src1 = cvCreateImage(cvSize(roi.width/scale[3],roi.height/scale[3]), IPL_DEPTH_8U, 1);
+                cvResize(src3,src1,CV_INTER_LINEAR);
+	    	    dst = cvCreateImage({roi.width/scale[3],roi.height/scale[3]}, IPL_DEPTH_8U, 3);
+	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src1);
+	    	    cvReleaseImage(&bayer);
+                wFrame= cvarrToMat(dst);
+                writer4.write(wFrame); 
 	    	    cvReleaseImage(&dst);
             }
             #else 
@@ -268,24 +399,45 @@ void setup()
         exit(1);
     }
     type = bufferinfo.type;
-    if(shared_region==0){
+    if(regions==1){
         S = Size(width,height);
   //      writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
         writer.open("test.avi",fourcc,fps,S);
     }
-    else
+    else if (regions==2)
     {
-        S = Size((width*shared_region)/(scale*100),height/scale);
-    //    writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+        S = Size(width/(2*scale[0]),height/(scale[0]));
         writer.open("test.avi",fourcc,fps,S);
-        S = Size(width-(width*shared_region)/100,height);
-        //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
+        S = Size(width/(2*scale[1]),height/(scale[1]));
         writer2.open("test2.avi",fourcc,fps,S);
+    }
+    else if (regions==3)
+    {
+        S = Size(width/(2*scale[0]),height/(scale[0]));
+        writer.open("test.avi",fourcc,fps,S);
+        S = Size(width/(2*scale[1]),height/(2*scale[1]));
+        writer2.open("test2.avi",fourcc,fps,S);
+        S = Size(width/(2*scale[2]),height/(2*scale[2]));
+        writer3.open("test3.avi",fourcc,fps,S);
+    }
+    else if (regions==4)
+    {
+        S = Size(width/(2*scale[0]),height/(2*scale[0]));
+        writer.open("test.avi",fourcc,fps,S);
+        S = Size(width/(2*scale[1]),height/(2*scale[1]));
+        writer2.open("test2.avi",fourcc,fps,S);
+        S = Size(width/(2*scale[2]),height/(2*scale[2]));
+        writer3.open("test3.avi",fourcc,fps,S);
+        S = Size(width/(2*scale[3]),height/(2*scale[3]));
+        writer4.open("test4.avi",fourcc,fps,S);
     }
 }
 int main(int argc, char** argv){
-    shared_region=atoi(argv[1]);
+    regions=atoi(argv[1]);
     iter=atoi(argv[2]);
+    for (int ii =0; ii<regions; ii++){
+        scale[ii]= atoi(argv[3+ii]);
+    }
     system("echo r> running.re");
     setup();
     // Activate streaming
