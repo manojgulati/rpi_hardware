@@ -16,10 +16,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <chrono>
+#include <opencv2/objdetect.hpp>
 #include <iostream>
 #define CV_NO_BACKWARD_COMPATIBILITY
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 #define switch_stream
 #include <thread>
 //#define no_process
@@ -33,8 +35,8 @@ int resolution_region[4]= {0,0,0,0};
 int type;
 void* buffer_start;
 int delay;
-int height=1080;
-int width=1080;
+int height=950;//1080;
+int width=950;//1080;
 Size S;
 const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
@@ -63,6 +65,9 @@ IplImage *bayer, *rgb;
 int frame_ready= 0;
 int done=0;
 int global_delay=125000 ;
+//for light weight face detection
+cv::CascadeClassifier classifier("face.xml");
+std::vector<cv::Rect> features;
 void capture()
 {
     int val = 0;
@@ -138,22 +143,31 @@ void process()
         auto t1 = std::chrono::high_resolution_clock::now();
         if(frame_ready)
         {
-    
         #ifndef no_process
            roi.x =0; //1200     // 950
            roi.y =0; //350      //150 
            roi.width = resx[0];  //2360          //2750
            roi.height = resy[0];  //1235 /2
             printf("processing %0d\n",val);
-	    	bayer = cvCreateImage({1920,1080}, IPL_DEPTH_8U, 1);
-	    	bayer->imageData = (char *)(buffer_start);
-	    	cvSetImageROI(bayer, roi);
-	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-            cvCopy(bayer, src);
+	    	//bayer = cvCreateImage({1920,1080}, IPL_DEPTH_8U, 1);
+	    	//bayer->imageData = (char *)(buffer_start);
+	    	//cvSetImageROI(bayer, roi);
+            src= cvLoadImage("face.jpeg",CV_LOAD_IMAGE_GRAYSCALE);
+	    	//src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+            //cvCopy(bayer, src);
            // auto t3 = std::chrono::high_resolution_clock::now();
  	       // auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t1 ).count();
            // std::cout << duration1<<std::endl;
             frame_ready=0;
+            wFrame= cvarrToMat(src);
+            classifier.detectMultiScale(wFrame, features, 1.1, 2,0 | CV_HAAR_SCALE_IMAGE, cv::Size(30, 30));
+            for (auto&& rect : features) {
+                            cvRectangle(src,                  
+                                  cvPoint(rect.x, rect.y),    
+                                  cvPoint(rect.x+rect.width, rect.y+rect.height),
+                                  cvScalar(255, 255, 255, 0),
+                                  2, 8, 0);
+                }
             if(regions ==1){
                 roi.x =0; //1200     // 950
                 roi.y =0; //350      //150 
