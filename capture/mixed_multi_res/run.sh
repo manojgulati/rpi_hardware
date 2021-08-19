@@ -12,3 +12,4 @@ v4l2-ctl --set-ctrl red_pixel_value=1023
 v4l2-ctl --set-ctrl vertical_blanking=$2
 v4l2-ctl --set-ctrl exposure=$1
 v4l2-ctl --set-ctrl red_pixel_value=1023
+sudo iwconfig wlan0 power off
