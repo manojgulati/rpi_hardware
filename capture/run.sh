@@ -1,4 +1,3 @@
-mkdir /run/user/1000/images
 sudo echo '1-1' | sudo tee /sys/bus/usb/drivers/usb/unbind
 sudo ifconfig eth0 down
 sudo /opt/vc/bin/tvservice -o

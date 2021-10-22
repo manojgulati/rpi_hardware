@@ -20,11 +20,18 @@
 #define CV_NO_BACKWARD_COMPATIBILITY
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#define switch_stream
+#define avoid_small
+//#define switch_stream
 #include <thread>
+#include <ctime>
+#include <sstream>
+//#include <chrono>
 //#define no_process
+#include <opencv2/imgproc.hpp>
 using namespace std;
 using namespace cv;
+using namespace std::chrono;
+ 
 int fd;
 int scaler=1;
 vector<uchar> buf;  
@@ -34,6 +41,8 @@ void* buffer_start;
 int delay;
 int height=1080;
 int width=1080;
+int w1=1920;
+int h1=1080;
 Size S;
 const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
@@ -42,7 +51,7 @@ double fps= 4;
 VideoWriter writer;
 VideoWriter writer2;
 IplImage *src,*dst,*src1,*src3;
-Mat wFrame;
+Mat wFrame,wFrame3,wFrame5;
 struct v4l2_control control;
 struct v4l2_format formats;
 struct v4l2_capability cap;
@@ -51,7 +60,7 @@ struct v4l2_buffer bufferinfo;
 int resx[15] = { width, 1100, 900, 900, 800, 700,  600, 600, 512 , 440, 360, 224, 160, 96, 70};
 int resy[15] = { height,  800,  900, 800, 800, 800 , 800, 600, 512 , 440, 360, 224, 160, 96, 70};
 int shared_region=0;
-int scale=4; 
+int scale=5; 
 int iter;
 CvSize sz = { width, height };
 cv::Rect roi;
@@ -59,7 +68,7 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-int global_delay=125000 ;
+int global_delay=200000 ;
 void capture()
 {
     int val = 0;
@@ -142,7 +151,7 @@ void process()
            roi.width = resx[0];  //2360          //2750
            roi.height = resy[0];  //1235 /2
             printf("processing %0d\n",val);
-	    	bayer = cvCreateImage({1920,1080}, IPL_DEPTH_8U, 1);
+	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
 	    	bayer->imageData = (char *)(buffer_start);
 	    	cvSetImageROI(bayer, roi);
 	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
@@ -152,6 +161,8 @@ void process()
            // std::cout << duration1<<std::endl;
             frame_ready=0;
             if(shared_region==0){
+                string str1;
+                stringstream ss;
                 roi.x =0; //1200     // 950
                 roi.y =0; //350      //150 
                 roi.width = resx[0];  //2360          //2750
@@ -162,6 +173,10 @@ void process()
 	    	    cvReleaseImage(&src);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
+                auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                ss << now;
+                ss >> str1;
+                cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false);
                 writer.write(wFrame);
 	    	    cvReleaseImage(&dst);
             }
@@ -170,6 +185,7 @@ void process()
                 roi.y =0; //350     //150 
                 roi.width = int(resx[0]*shared_region/100);  //2360          //2750
                 roi.height = resy[0];  //1235 
+#ifndef avoid_small
 	    	    cvSetImageROI(src, roi);
 	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
                 cvCopy(src, src3);
@@ -182,7 +198,9 @@ void process()
                 wFrame= cvarrToMat(dst);
                 writer.write(wFrame); 
 	    	    cvReleaseImage(&dst);
+#endif
                 roi.x =roi.width; //1200     // 950
+                roi.y =0; //350     //150 
                 roi.width = resx[0]-roi.width;  //2360          //2750
 	    	    cvSetImageROI(src, roi);
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
@@ -230,9 +248,9 @@ void setup()
     }
     printf("capablity check passed\n");
     formats.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    formats.fmt.pix.pixelformat = V4L2_PIX_FMT_SRGGB8;
-    formats.fmt.pix.width = 1920;
-    formats.fmt.pix.height = 1080;
+    formats.fmt.pix.pixelformat = V4L2_PIX_FMT_SBGGR8;
+    formats.fmt.pix.width = w1;
+    formats.fmt.pix.height = h1;
     if(ioctl(fd, VIDIOC_S_FMT, &formats) < 0){
         perror("VIDIOC_S_FMT");
         exit(1);
@@ -275,6 +293,7 @@ void setup()
     }
     else
     {
+        
         S = Size((width*shared_region)/(scale*100),height/scale);
     //    writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
         writer.open("test.avi",fourcc,fps,S);
@@ -288,20 +307,16 @@ int main(int argc, char** argv){
     iter=atoi(argv[2]);
     system("echo r> running.re");
     setup();
-    // Activate streaming
     #ifndef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
         	    perror("VIDIOC_STREAMON");
         	    exit(1);
         	}
     #endif
-        //printf("Acquiring frame id %0d\n",val+1);
 	    thread th1(capture);
 	    thread th2(process);
         th1.join();
         th2.join();
-        //capture();
-        //process();
     #ifndef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
         	    perror("VIDIOC_STREAMON");
@@ -311,7 +326,6 @@ int main(int argc, char** argv){
     system("rm running.re");
     writer.release();
     writer2.release();
-    
     close(fd);
     return EXIT_SUCCESS;
 }

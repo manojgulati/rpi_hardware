@@ -2,7 +2,6 @@ import os
 from time import sleep
 import socket
 from time import time
-import psutil
 file1='test.avi'
 file2='test2.avi'
 dur = os.path.getmtime(file1)
@@ -10,8 +9,8 @@ dur2 = os.path.getmtime(file2)
 count=0
 las=0
 las2=0
-TCP_PORT = 5003
-TCP_IP = '192.168.18.19'
+TCP_PORT = 5006
+TCP_IP = '192.168.1.138'
 n=0
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
@@ -50,7 +49,7 @@ while True:
         print("not running")
         sock.close()
         break
-    delay =0.125 - (time()-t)
+    delay =0.025 - (time()-t)
     if(delay<0):
         print(delay)
         delay = 0
