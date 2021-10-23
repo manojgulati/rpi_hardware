@@ -32,7 +32,6 @@
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
- 
 int fd;
 int scaler=1;
 vector<uchar> buf;  
@@ -49,6 +48,8 @@ const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
 //int fourcc = VideoWriter::fourcc('M','P','E','G');
 double fps= 4;
+unsigned long time_now2 = -1;
+unsigned long time_now = -1;
 VideoWriter writer;
 VideoWriter writer2;
 IplImage *src,*dst,*src1,*src3;
@@ -69,25 +70,26 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-int global_delay=125000 ;
-string str1;
-stringstream ss;
-ofstream myfile;
+static int global_delay=100000 ;
+static int gl_dl = global_delay/1000;
+long dl;
+int cap_nu =0;
 void capture()
 {
     int val = 0;
     while(1)
     {
+        cap_nu=val;
         auto t1 = std::chrono::high_resolution_clock::now();
-	auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        ss << now;
-        ss >> str1;
+	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        time_now2 = (unsigned long)now;
+        dl = (gl_dl-(time_now2 %gl_dl))%gl_dl;
+        usleep(dl*1000);
+	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        time_now  = (unsigned long)now;
+        //cout <<"capture num" << time_now<<endl;
         if(1)
         {
-//            printf("capturing %0d\n",val);
-            //printf("Acquiring frame id %0d\n",val+1);
-    
-            //printf("Acquiring frame id %0d\n",val+1);
 		
     #ifdef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
@@ -116,7 +118,7 @@ void capture()
      auto t2 = std::chrono::high_resolution_clock::now();
      auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
      delay = global_delay- int(duration);
-    std::cout<<"capture "<<delay<<std::endl;
+   // std::cout<<"capture delay"<<delay<<std::endl;
     if(delay<0){
         delay=0;
     }
@@ -152,22 +154,18 @@ void process()
         auto t1 = std::chrono::high_resolution_clock::now();
         if(frame_ready)
         {
-    	myfile << str1;
-	myfile << "\n";
+    	cout <<endl<<"process number"<<time_now <<endl;
         #ifndef no_process
            roi.x =0; //1200     // 950
            roi.y =0; //350      //150 
            roi.width = resx[0];  //2360          //2750
            roi.height = resy[0];  //1235 /2
-            printf("processing %0d\n",val);
+            //printf("processing %0d\n",val);
 	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
 	    	bayer->imageData = (char *)(buffer_start);
 	    	cvSetImageROI(bayer, roi);
 	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
             cvCopy(bayer, src);
-           // auto t3 = std::chrono::high_resolution_clock::now();
- 	       // auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t1 ).count();
-           // std::cout << duration1<<std::endl;
             frame_ready=0;
             if(shared_region==0){
                 roi.x =0; //1200     // 950
@@ -180,7 +178,11 @@ void process()
 	    	    cvReleaseImage(&src);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
-                
+                stringstream ss;
+                string str1 ;
+                ss << time_now;
+                ss >> str1;
+                cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false); 
                
                 writer.write(wFrame);
 	    	    cvReleaseImage(&dst);
@@ -224,7 +226,7 @@ void process()
         auto t2 = std::chrono::high_resolution_clock::now();
  	    auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
         delay2 = global_delay- int(duration);
-        std::cout << delay2<<std::endl;
+        //std::cout << delay2<<std::endl;
         if(delay2<0){
             delay2=0;
             synch=1;
@@ -238,7 +240,7 @@ void process()
 }
 void setup()
 {
-    myfile.open ("timestamp.txt");
+    //myfile.open ("timestamp.txt");
     if((fd = open("/dev/video0", O_RDWR)) < 0){
         perror("open");
         exit(1);

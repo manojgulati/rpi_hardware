@@ -7,4 +7,4 @@ ccflags-y += \
     -I$(srctree)/drivers/staging/vc04_services \
     -D__VCCOREVER__=0x04000000
 clean:
-	rm -rf *.o *.mod *Module* *.ko
+	rm -rf *.o *.mod *Module* *.ko .*

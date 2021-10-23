@@ -91,4 +91,4 @@ MODULE_INFO(depends, "videodev,v4l2-fwnode,mc");
 MODULE_ALIAS("of:N*T*Csony,imx219");
 MODULE_ALIAS("of:N*T*Csony,imx219C*");
 
-MODULE_INFO(srcversion, "59C9D6DCE84F4878F974446");
+MODULE_INFO(srcversion, "9E92BBB5FF4F20E43524884");
