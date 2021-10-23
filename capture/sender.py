@@ -9,8 +9,9 @@ dur2 = os.path.getmtime(file2)
 count=0
 las=0
 las2=0
-TCP_PORT = 5006
+TCP_PORT = 5008
 TCP_IP = '192.168.1.138'
+#TCP_IP = '192.168.78.148'
 n=0
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
