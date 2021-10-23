@@ -32,6 +32,7 @@
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
+ofstream myfile;
 int fd;
 int scaler=1;
 vector<uchar> buf;  
@@ -142,19 +143,18 @@ void sync()
 void process()
 {
     int val = 0;
-    int delay2=0;
-    int synch=0;
-    sync();
+    int prev_cap =0;
     while(val<iter) 
     {
-        if(synch){
-            synch=0;
-            sync();
+        while((frame_ready==0) || (prev_cap == cap_nu)){
+            //printf("%0d %0d\n",prev_cap,cap_nu);
+            usleep(1000);
         }
-        auto t1 = std::chrono::high_resolution_clock::now();
         if(frame_ready)
         {
-    	cout <<endl<<"process number"<<time_now <<endl;
+    	cout<<"number "<<cap_nu<<" "<<val <<endl;
+    	myfile<<cap_nu<<" "<<val <<endl;
+        prev_cap=cap_nu;
         #ifndef no_process
            roi.x =0; //1200     // 950
            roi.y =0; //350      //150 
@@ -223,24 +223,13 @@ void process()
             #endif
             val+=1;
         }
-        auto t2 = std::chrono::high_resolution_clock::now();
- 	    auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
-        delay2 = global_delay- int(duration);
-        //std::cout << delay2<<std::endl;
-        if(delay2<0){
-            delay2=0;
-            synch=1;
-            frame_ready=0;
-        }
-//        global_delay  = 150000;
-        usleep(delay2);
         
     }
     done=1;
 }
 void setup()
 {
-    //myfile.open ("timestamp.txt");
+    myfile.open ("synch.txt");
     if((fd = open("/dev/video0", O_RDWR)) < 0){
         perror("open");
         exit(1);
