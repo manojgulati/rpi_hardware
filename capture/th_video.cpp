@@ -70,6 +70,9 @@ IplImage *bayer, *rgb;
 int frame_ready= 0;
 int done=0;
 int global_delay=125000 ;
+string str1;
+stringstream ss;
+ofstream myfile;
 void capture()
 {
     int val = 0;
@@ -149,7 +152,8 @@ void process()
         auto t1 = std::chrono::high_resolution_clock::now();
         if(frame_ready)
         {
-    
+    	myfile << str1;
+	myfile << "\n";
         #ifndef no_process
            roi.x =0; //1200     // 950
            roi.y =0; //350      //150 
@@ -234,6 +238,7 @@ void process()
 }
 void setup()
 {
+    myfile.open ("timestamp.txt");
     if((fd = open("/dev/video0", O_RDWR)) < 0){
         perror("open");
         exit(1);
