@@ -69,22 +69,23 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-int global_delay=200000 ;
+int global_delay=125000 ;
 void capture()
 {
     int val = 0;
     while(1)
     {
         auto t1 = std::chrono::high_resolution_clock::now();
+	auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        ss << now;
+        ss >> str1;
         if(1)
         {
 //            printf("capturing %0d\n",val);
             //printf("Acquiring frame id %0d\n",val+1);
     
             //printf("Acquiring frame id %0d\n",val+1);
-		auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                ss << now;
-                ss >> str1;
+		
     #ifdef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
         	    perror("VIDIOC_STREAMON");
@@ -165,8 +166,6 @@ void process()
            // std::cout << duration1<<std::endl;
             frame_ready=0;
             if(shared_region==0){
-                string str1;
-                stringstream ss;
                 roi.x =0; //1200     // 950
                 roi.y =0; //350      //150 
                 roi.width = resx[0];  //2360          //2750
