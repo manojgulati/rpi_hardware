@@ -25,6 +25,7 @@
 #include <thread>
 #include <ctime>
 #include <sstream>
+#include <fstream>
 //#include <chrono>
 //#define no_process
 #include <opencv2/imgproc.hpp>
@@ -81,6 +82,9 @@ void capture()
             //printf("Acquiring frame id %0d\n",val+1);
     
             //printf("Acquiring frame id %0d\n",val+1);
+		auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                ss << now;
+                ss >> str1;
     #ifdef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
         	    perror("VIDIOC_STREAMON");
@@ -173,10 +177,8 @@ void process()
 	    	    cvReleaseImage(&src);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
-                auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                ss << now;
-                ss >> str1;
-                cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false);
+                
+               
                 writer.write(wFrame);
 	    	    cvReleaseImage(&dst);
             }
