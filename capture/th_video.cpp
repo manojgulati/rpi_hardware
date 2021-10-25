@@ -130,21 +130,11 @@ void capture()
      }
    }
 }
-void sync()
-{
-    printf("synching..\n");
-    while(frame_ready==0){
-        usleep(1000);
-    }
-    if(delay<0)
-        delay =0;
-    usleep(delay);
-}
 void process()
 {
-    int val = 0;
+    int val = 1;
     int prev_cap =0;
-    while(val<iter) 
+    while(val<iter+1) 
     {
         while((frame_ready==0) || (prev_cap == cap_nu)){
             //printf("%0d %0d\n",prev_cap,cap_nu);
@@ -152,9 +142,9 @@ void process()
         }
         if(frame_ready)
         {
-    	cout<<"number "<<cap_nu<<" "<<val <<endl;
-    	myfile<<cap_nu<<" "<<val <<endl;
-        prev_cap=cap_nu;
+    	    cout<<"number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
+    	    myfile<<cap_nu<<" "<<val <<endl;
+            prev_cap=cap_nu;
         #ifndef no_process
            roi.x =0; //1200     // 950
            roi.y =0; //350      //150 
@@ -300,6 +290,14 @@ void setup()
     }
 }
 int main(int argc, char** argv){
+        static int align=10000;
+	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        time_now2 = (unsigned long)now;
+        dl = (align-(time_now2 %align))%align;
+        usleep(dl*1000);
+	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        time_now2 = (unsigned long)now;
+    cout << "starting time "<<time_now2<<endl;
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);
     system("echo r> running.re");
