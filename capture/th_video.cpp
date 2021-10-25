@@ -71,7 +71,7 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-static int global_delay=100000 ;
+static int global_delay=200000 ;
 static int gl_dl = global_delay/1000;
 long dl;
 int cap_nu =0;
@@ -143,7 +143,7 @@ void process()
         if(frame_ready)
         {
     	    cout<<"number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
-    	    myfile<<cap_nu<<" "<<val <<endl;
+    	    myfile<<cap_nu<<endl<<flush;
             prev_cap=cap_nu;
         #ifndef no_process
            roi.x =0; //1200     // 950

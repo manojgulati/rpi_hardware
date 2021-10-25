@@ -11,6 +11,7 @@ durs = os.path.getmtime(syn)
 count=0
 las=0
 las2=0
+las3=0
 TCP_PORT = 5009
 TCP_IP = '192.168.1.138'
 #TCP_IP = '192.168.78.148'
@@ -46,14 +47,12 @@ while True:
         send_chuncks(l,len(l)) 
         lenss+=len(l)
     if (durs != os.path.getmtime(syn)):
-        dur2 = os.path.getmtime(file2)
-        f = open(file2)
-        f.seek(las2)
+        durs = os.path.getmtime(syn)
+        f = open(syn)
+        f.seek(las3)
         l = b'3'+f.read()
-        las2=f.tell()
+        las3=f.tell()
         send_chuncks(l,len(l)) 
-        lenss+=len(l)
-        f.close()
         f.close()
     if(started and os.path.exists("running.re")):
         pass
