@@ -14,7 +14,7 @@ def recvall(sock, count):
     return buf
 
 TCP_IP = ''
-TCP_PORT = 5006
+TCP_PORT = 5009
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((TCP_IP, TCP_PORT))
@@ -40,8 +40,9 @@ def process(frame):
     img = cv2.flip(img,0)
     img = cv2.flip(img,1)
     #img = cv2.fastNlMeansDenoisingColored(img,None,3,5,7,21)  
-    img = cv2.medianBlur(img,3)
+    #img = cv2.medianBlur(img,5)
     return img 
+seq=[]
 while(1):
     if 1:
         font                   = cv2.FONT_HERSHEY_SIMPLEX
@@ -56,6 +57,13 @@ while(1):
             buff1+=stringData[1:]
         if(stringData[0]==50):
             buff2+=stringData[1:]
+        if(stringData[0]==51):
+            sequence= stringData[1:]
+            sequence= sequence.splitlines()
+            for ss in sequence:
+                seq.append(int(ss))
+            #print(seq)
+            
         a = buff1.find(b'\xff\xd8')
         b = buff1.find(b'\xff\xd9')
         if(a!=-1 and b!=-1):
@@ -70,8 +78,11 @@ while(1):
             img = process(img)
             img1 = img[:,:]
             #cv2.putText(img,'frame '+str(frame1), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
-            cv2.imwrite('frame1_'+str(frame1)+'.jpg',img1)
-            cv2.imshow("cam2",img)
+            print(frame1,str(seq[frame1-1]))
+            cv2.imwrite('frame1_'+str(seq[frame1-1])+'.jpg',img1)
+            smal=cv2.resize(img,(600,600))
+            #print("fram1",frame1)
+            cv2.imshow("cam8",smal)
             cv2.waitKey(3)
         a = buff2.find(b'\xff\xd8')
         b = buff2.find(b'\xff\xd9')
@@ -84,7 +95,7 @@ while(1):
             img1 = img[:,:]
             #cv2.putText(img,'frame '+str(frame2), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
             cv2.imwrite('frame2_'+str(frame2)+'.jpg',img1)
-            cv2.imshow("feed 2",img)
+            cv2.imshow("feed 4",smal)
             cv2.waitKey(3)
     else:
         print("Breaking..")
