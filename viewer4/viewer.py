@@ -56,6 +56,8 @@ while(1):
             buff1+=stringData[1:]
         if(stringData[0]==50):
             buff2+=stringData[1:]
+        if(stringData[0]==51):
+            print(stringData[1:])
         a = buff1.find(b'\xff\xd8')
         b = buff1.find(b'\xff\xd9')
         if(a!=-1 and b!=-1):

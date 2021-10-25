@@ -4,8 +4,10 @@ import socket
 from time import time
 file1='test.avi'
 file2='test2.avi'
+syn='synch.txt'
 dur = os.path.getmtime(file1)
 dur2 = os.path.getmtime(file2)
+durs = os.path.getmtime(syn)
 count=0
 las=0
 las2=0
@@ -43,6 +45,15 @@ while True:
         las2=f.tell()
         send_chuncks(l,len(l)) 
         lenss+=len(l)
+    if (durs != os.path.getmtime(syn)):
+        dur2 = os.path.getmtime(file2)
+        f = open(file2)
+        f.seek(las2)
+        l = b'3'+f.read()
+        las2=f.tell()
+        send_chuncks(l,len(l)) 
+        lenss+=len(l)
+        f.close()
         f.close()
     if(started and os.path.exists("running.re")):
         pass
