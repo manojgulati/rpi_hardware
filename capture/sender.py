@@ -13,6 +13,9 @@ except:
     os.system("echo > "+file1)
     os.system("echo > "+file2)
     os.system("echo > "+syn)
+    dur = os.path.getmtime(file1)
+    dur2 = os.path.getmtime(file2)
+    durs = os.path.getmtime(syn)
 count=0
 las=0
 las2=0
