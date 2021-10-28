@@ -298,7 +298,7 @@ void setup()
 }
 
 int main(int argc, char** argv){
-        static int align=10000;
+        static int align=15000;
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now2 = (unsigned long)now;
         dl = (align-(time_now2 %align))%align;
