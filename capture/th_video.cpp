@@ -99,6 +99,7 @@ void capture()
         	}
     #endif
             // The buffer's waiting in the outgoing queue.
+            // capture image here
             if(ioctl(fd, VIDIOC_QBUF, &bufferinfo) < 0){
                 perror("VIDIOC_QBUF");
                 exit(1);
@@ -145,29 +146,35 @@ void process()
     	    cout<<"number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
     	    myfile<<cap_nu<<endl<<flush;
             prev_cap=cap_nu;
+
         #ifndef no_process
-           roi.x =0; //1200     // 950
-           roi.y =0; //350      //150 
-           roi.width = resx[0];  //2360          //2750
-           roi.height = resy[0];  //1235 /2
+        // process the captured image
+            roi.x =0; //1200     // 950
+            roi.y =0; //350      //150
+            roi.width = resx[0];  //2360          //2750
+            roi.height = resy[0];  //1235 /2
             //printf("processing %0d\n",val);
+	    	// crop the 1920x1080 image to 1080x1080
 	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
 	    	bayer->imageData = (char *)(buffer_start);
 	    	cvSetImageROI(bayer, roi);
 	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
             cvCopy(bayer, src);
+
             frame_ready=0;
             if(shared_region==0){
-                roi.x =0; //1200     // 950
-                roi.y =0; //350      //150 
-                roi.width = resx[0];  //2360          //2750
-                roi.height = resy[0];  //1235 /2
-	    	    cvSetImageROI(src, roi);
+//                roi.x =0; //1200     // 950
+//                roi.y =0; //350      //150
+//                roi.width = resx[0];  //2360          //2750
+//                roi.height = resy[0];  //1235 /2
+//	    	    cvSetImageROI(src, roi);
+                // debayer the image
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);
 	    	    cvReleaseImage(&src);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
+                // add text overlay -- for debugging purpose
                 stringstream ss;
                 string str1 ;
                 ss << time_now;
@@ -182,7 +189,7 @@ void process()
                 roi.y =0; //350     //150 
                 roi.width = int(resx[0]*shared_region/100);  //2360          //2750
                 roi.height = resy[0];  //1235 
-#ifndef avoid_small
+            #ifndef avoid_small
 	    	    cvSetImageROI(src, roi);
 	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
                 cvCopy(src, src3);
@@ -208,9 +215,9 @@ void process()
                 writer2.write(wFrame); 
 	    	    cvReleaseImage(&dst);
             }
-            #else 
-                frame_ready=0;
-            #endif
+         #else
+            frame_ready=0;
+         #endif
             val+=1;
         }
         
@@ -289,6 +296,7 @@ void setup()
         writer2.open("test2.avi",fourcc,fps,S);
     }
 }
+
 int main(int argc, char** argv){
         static int align=10000;
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -298,10 +306,15 @@ int main(int argc, char** argv){
 	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now2 = (unsigned long)now;
     cout << "starting time "<<time_now2<<endl;
+
+    // read cmd line args
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);
+
+    // setup the system
     system("echo r> running.re");
     setup();
+
     #ifndef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
         	    perror("VIDIOC_STREAMON");
@@ -314,7 +327,7 @@ int main(int argc, char** argv){
         th2.join();
     #ifndef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
-        	    perror("VIDIOC_STREAMON");
+        	    perror("VIDIOC_STREAMOFF");
         	    exit(1);
         	}
     #endif
