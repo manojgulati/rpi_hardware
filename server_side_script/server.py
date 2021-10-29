@@ -102,6 +102,4 @@ while(1):
     else:
         print("Breaking..")
         break
-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
-
 s.close()
