@@ -2,8 +2,9 @@
 import socket
 import cv2
 import numpy as np
-import os
+import os,sys
 f= open('test.avi','wb')
+folder = sys.argv[2]
 def recvall(sock, count):
     buf = b''
     while count:
@@ -14,11 +15,11 @@ def recvall(sock, count):
     return buf
 
 TCP_IP = ''
-TCP_PORT = int(sys.argv[1]+5000)
-
+TCP_PORT = int(sys.argv[1])+5000
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((TCP_IP, TCP_PORT))
 s.listen(True)
+print("Running server on port number "+str(TCP_PORT)+" server number "+ str(sys.argv[1]))
 conn, addr = s.accept()
 cur= 1
 datas=[]
@@ -80,7 +81,7 @@ while(1):
             img1 = img[:,:]
             #cv2.putText(img,'frame '+str(frame1), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
             print(frame1,str(seq[frame1-1]))
-            cv2.imwrite('frame1_'+str(seq[frame1-1])+'.jpg',img1)
+            cv2.imwrite(folder+'/frame1_'+str(seq[frame1-1])+'.jpg',img1)
             smal=cv2.resize(img,(600,600))
             #print("fram1",frame1)
             cv2.imshow("cam8",smal)
@@ -101,4 +102,6 @@ while(1):
     else:
         print("Breaking..")
         break
+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
+
 s.close()
