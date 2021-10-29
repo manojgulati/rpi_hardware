@@ -28,6 +28,7 @@ frame1=0
 frame2=0
 g=1.5
 def process(frame):
+    return frame
     inBlack  = np.array([0, 0, 0], dtype=np.float32)
     inWhite  = np.array([205, 255, 205], dtype=np.float32)
     inGamma  = np.array([g, g, g], dtype=np.float32)
@@ -75,7 +76,7 @@ while(1):
             #print(ff)
             img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
             #print(img.shape)
-            img = process(img)
+            #img = process(img)
             img1 = img[:,:]
             #cv2.putText(img,'frame '+str(frame1), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
             print(frame1,str(seq[frame1-1]))
