@@ -53,7 +53,8 @@ unsigned long time_now2 = -1;
 unsigned long time_now = -1;
 VideoWriter writer;
 VideoWriter writer2;
-IplImage *src,*dst,*src1,*src3;
+IplImage *dst,*src1,*src3;
+IplImage *src[10];
 Mat wFrame,wFrame3,wFrame5;
 struct v4l2_control control;
 struct v4l2_format formats;
@@ -158,8 +159,8 @@ void process()
 	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
 	    	bayer->imageData = (char *)(buffer_start);
 	    	cvSetImageROI(bayer, roi);
-	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-            cvCopy(bayer, src);
+	    	src[0] = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+            cvCopy(bayer, src[0]);
 
             frame_ready=0;
             if(shared_region==0){
@@ -170,8 +171,8 @@ void process()
 //	    	    cvSetImageROI(src, roi);
                 // debayer the image
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src);
+	    	    cvCvtColor(src[0], dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src[0]);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 // add text overlay -- for debugging purpose
@@ -190,9 +191,9 @@ void process()
                 roi.width = int(resx[0]*shared_region/100);  //2360          //2750
                 roi.height = resy[0];  //1235 
             #ifndef avoid_small
-	    	    cvSetImageROI(src, roi);
+	    	    cvSetImageROI(src[0], roi);
 	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
-                cvCopy(src, src3);
+                cvCopy(src[0], src3);
 	    	    src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
                 cvResize(src3,src1,CV_INTER_LINEAR);
 	    	    dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
@@ -206,10 +207,10 @@ void process()
                 roi.x =roi.width; //1200     // 950
                 roi.y =0; //350     //150 
                 roi.width = resx[0]-roi.width;  //2360          //2750
-	    	    cvSetImageROI(src, roi);
+	    	    cvSetImageROI(src[0], roi);
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src);
+	    	    cvCvtColor(src[0], dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&src[0]);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 writer2.write(wFrame); 
