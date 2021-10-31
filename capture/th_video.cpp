@@ -29,6 +29,7 @@
 //#include <chrono>
 //#define no_process
 #include <opencv2/imgproc.hpp>
+#define BUF_NO 20
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
@@ -53,8 +54,8 @@ unsigned long time_now2 = -1;
 unsigned long time_now = -1;
 VideoWriter writer;
 VideoWriter writer2;
-IplImage *dst,*src1,*src3;
-IplImage *src[10];
+IplImage *dst,*src1,*src3,*to_process;
+IplImage *src[BUF_NO];
 Mat wFrame,wFrame3,wFrame5;
 struct v4l2_control control;
 struct v4l2_format formats;
@@ -76,6 +77,8 @@ static int global_delay=100000 ;
 static int gl_dl = global_delay/1000;
 long dl;
 int cap_nu =0;
+int producer_pointer=0;
+int consumer_pointer=0;
 void capture()
 {
     int val = 0;
@@ -110,11 +113,26 @@ void capture()
                 exit(1);
         	}
     #ifdef switch_stream
-            if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){ perror("VIDIOC_STREAMOFF");
+            if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){ 
+               perror("VIDIOC_STREAMOFF");
                exit(1);
             }
     #endif
         //copied=0;
+        #ifndef no_process
+            roi.x =0; //1200     // 950
+            roi.y =0; //350      //150
+            roi.width = resx[0];  //2360          //2750
+            roi.height = resy[0];  //1235 /2
+	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
+	    	bayer->imageData = (char *)(buffer_start);
+	    	cvSetImageROI(bayer, roi);
+            cvCopy(bayer, src[producer_pointer]);
+            producer_pointer+=1;
+            if(producer_pointer==BUF_NO) {
+                producer_pointer==0;
+            }
+         #endif
         frame_ready=1;
         val+=1;
      }
@@ -142,37 +160,20 @@ void process()
             //printf("%0d %0d\n",prev_cap,cap_nu);
             usleep(1000);
         }
+    #ifndef no_process
         if(frame_ready)
         {
     	    cout<<"number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
     	    myfile<<cap_nu<<endl<<flush;
             prev_cap=cap_nu;
+	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+            cvCopy(src[0],to_process);
 
-        #ifndef no_process
-        // process the captured image
-            roi.x =0; //1200     // 950
-            roi.y =0; //350      //150
-            roi.width = resx[0];  //2360          //2750
-            roi.height = resy[0];  //1235 /2
-            //printf("processing %0d\n",val);
-	    	// crop the 1920x1080 image to 1080x1080
-	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
-	    	bayer->imageData = (char *)(buffer_start);
-	    	cvSetImageROI(bayer, roi);
-	    	src[0] = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-            cvCopy(bayer, src[0]);
 
-            frame_ready=0;
             if(shared_region==0){
-//                roi.x =0; //1200     // 950
-//                roi.y =0; //350      //150
-//                roi.width = resx[0];  //2360          //2750
-//                roi.height = resy[0];  //1235 /2
-//	    	    cvSetImageROI(src, roi);
-                // debayer the image
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src[0], dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src[0]);
+	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
+                frame_ready=0;
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 // add text overlay -- for debugging purpose
@@ -190,12 +191,13 @@ void process()
                 roi.y =0; //350     //150 
                 roi.width = int(resx[0]*shared_region/100);  //2360          //2750
                 roi.height = resy[0];  //1235 
+
             #ifndef avoid_small
-	    	    cvSetImageROI(src[0], roi);
+	    	    cvSetImageROI(to_process, roi);
 	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
-                cvCopy(src[0], src3);
+                cvCopy(to_process, src3);
 	    	    src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
-                cvResize(src3,src1,CV_INTER_LINEAR);
+                cvResize(to_process,src1,CV_INTER_LINEAR);
 	    	    dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
 	    	    cvReleaseImage(&src1);
@@ -203,14 +205,15 @@ void process()
                 wFrame= cvarrToMat(dst);
                 writer.write(wFrame); 
 	    	    cvReleaseImage(&dst);
-#endif
+            #endif
+
                 roi.x =roi.width; //1200     // 950
                 roi.y =0; //350     //150 
                 roi.width = resx[0]-roi.width;  //2360          //2750
-	    	    cvSetImageROI(src[0], roi);
+	    	    cvSetImageROI(to_process, roi);
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src[0], dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src[0]);
+	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&to_process);
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 writer2.write(wFrame); 
@@ -295,6 +298,9 @@ void setup()
         S = Size(width-(width*shared_region)/100,height);
         //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
         writer2.open("test2.avi",fourcc,fps,S);
+    }
+    for(int i=0; i<BUF_NO; i++){
+	    src[i] = cvCreateImage(sz, IPL_DEPTH_8U, 1);
     }
 }
 
