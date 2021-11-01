@@ -21,8 +21,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #define avoid_small
-//#define sh_region_on_left
-//#define sh_region_on_right
 //#define switch_stream
 #include <thread>
 #include <ctime>
@@ -30,8 +28,8 @@
 #include <fstream>
 //#include <chrono>
 //#define no_process
-//#define put_overlay
 #include <opencv2/imgproc.hpp>
+#define BUF_NO 20
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
@@ -55,9 +53,12 @@ int fourcc = VideoWriter::fourcc('M','J','P','G');
 double fps= 4;
 unsigned long time_now2 = -1;
 unsigned long time_now = -1;
+unsigned long times[BUF_NO];
+unsigned long seqs[BUF_NO];
 VideoWriter writer;
 VideoWriter writer2;
-IplImage *src,*dst,*src1,*src3;
+IplImage *dst,*src1,*src3,*to_process;
+IplImage *src[BUF_NO];
 Mat wFrame,wFrame3,wFrame5;
 struct v4l2_control control;
 struct v4l2_format formats;
@@ -75,16 +76,17 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-static int global_delay=200000 ;
+static int global_delay=100000 ;
 static int gl_dl = global_delay/1000;
 long dl;
 int cap_nu =0;
+long long int producer_pointer=0;
+long long int consumer_pointer=0;
 void capture()
 {
     int val = 0;
     while(1)
     {
-        cap_nu=val;
         auto t1 = std::chrono::high_resolution_clock::now();
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now2 = (unsigned long)now;
@@ -113,12 +115,31 @@ void capture()
                 exit(1);
         	}
     #ifdef switch_stream
-            if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){ perror("VIDIOC_STREAMOFF");
+            if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){ 
+               perror("VIDIOC_STREAMOFF");
                exit(1);
             }
     #endif
         //copied=0;
-        frame_ready=1;
+        #ifndef no_process
+        if((producer_pointer-consumer_pointer)<BUF_NO){
+            roi.x =0; //1200     // 950
+            roi.y =0; //350      //150
+            roi.width = resx[0];  //2360          //2750
+            roi.height = resy[0];  //1235 /2
+	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
+	    	bayer->imageData = (char *)(buffer_start);
+	    	cvSetImageROI(bayer, roi);
+            cvCopy(bayer, src[producer_pointer%BUF_NO]);
+            times[producer_pointer%BUF_NO]=time_now;
+            seqs[producer_pointer%BUF_NO]=val;
+            producer_pointer+=1;
+	    	cvReleaseImage(&bayer);
+        }
+        else {
+                    cout<<"buff full"<<endl;
+        }
+         #endif
         val+=1;
      }
      auto t2 = std::chrono::high_resolution_clock::now();
@@ -139,45 +160,29 @@ void process()
 {
     int val = 1;
     int prev_cap =0;
+    unsigned long int time_stamp=0;
     while(val<iter+1) 
     {
-        while((frame_ready==0) || (prev_cap == cap_nu)){
-            //printf("%0d %0d\n",prev_cap,cap_nu);
+        while(producer_pointer==consumer_pointer){
             usleep(1000);
         }
-        if(frame_ready)
+    #ifndef no_process
+        if(1)
         {
-    	    cout<<"frame number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
+            time_stamp=times[consumer_pointer%20];
+            cap_nu=seqs[consumer_pointer%20];
+    	    cout<<"producer "<<producer_pointer<<"consumer "<<consumer_pointer <<endl;
     	    myfile<<cap_nu<<endl<<flush;
-            prev_cap=cap_nu;
+	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+            cvCopy(src[consumer_pointer%20],to_process);
+            consumer_pointer+=1;
 
-        #ifndef no_process
-        // process the captured image
-            roi.x =0;
-            roi.y =0;
-            roi.width = resx[0];  //1080
-            roi.height = resy[0]; // 1080
-            //printf("processing %0d\n",val);
-	    	// crop the 1920x1080 image to 1080x1080
-	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
-	    	bayer->imageData = (char *)(buffer_start);
-	    	cvSetImageROI(bayer, roi);
-	    	src = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-            cvCopy(bayer, src);
 
-            frame_ready=0;
             if(shared_region==0){
-            // no shared region exists
-//                roi.x =0; //1200     // 950
-//                roi.y =0; //350      //150
-//                roi.width = resx[0];  //2360          //2750
-//                roi.height = resy[0];  //1235 /2
-//	    	    cvSetImageROI(src, roi);
-                // debayer the image
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src);
-	    	    cvReleaseImage(&bayer);
+	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&to_process);
+                frame_ready=0;
                 wFrame= cvarrToMat(dst);
                 // add text overlay -- for debugging purpose
                 #ifdef put_overlay
@@ -319,10 +324,13 @@ void setup()
         //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
         writer2.open("test2.avi",fourcc,fps,S);
     }
+    for(int i=0; i<BUF_NO; i++){
+	    src[i] = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+    }
 }
 
 int main(int argc, char** argv){
-        static int align=10000;
+        static int align=15000;
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now2 = (unsigned long)now;
         dl = (align-(time_now2 %align))%align;
