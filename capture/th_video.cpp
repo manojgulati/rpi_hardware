@@ -30,7 +30,7 @@
 //#define no_process
 #define put_overlay
 #include <opencv2/imgproc.hpp>
-#define BUF_NO 20
+#define BUF_NO 1
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
@@ -170,12 +170,12 @@ void process()
     #ifndef no_process
         if(1)
         {
-            time_stamp=times[consumer_pointer%20];
-            cap_nu=seqs[consumer_pointer%20];
+            time_stamp=times[consumer_pointer%BUF_NO];
+            cap_nu=seqs[consumer_pointer%BUF_NO];
     	    cout<<"producer "<<producer_pointer<<"consumer "<<consumer_pointer <<endl;
     	    myfile<<cap_nu<<endl<<flush;
 	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-            cvCopy(src[consumer_pointer%20],to_process);
+            cvCopy(src[consumer_pointer%BUF_NO],to_process);
             consumer_pointer+=1;
 
 
