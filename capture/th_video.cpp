@@ -21,6 +21,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #define avoid_small
+//#define sh_region_on_left
+//#define sh_region_on_right
 //#define switch_stream
 #include <thread>
 #include <ctime>
@@ -28,6 +30,7 @@
 #include <fstream>
 //#include <chrono>
 //#define no_process
+//#define put_overlay
 #include <opencv2/imgproc.hpp>
 using namespace std;
 using namespace cv;
@@ -44,6 +47,7 @@ int height=1080;
 int width=1080;
 int w1=1920;
 int h1=1080;
+bool shared_region_on_left=true; // position of shared region (left/right) in  the image frame
 Size S;
 const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
@@ -143,16 +147,16 @@ void process()
         }
         if(frame_ready)
         {
-    	    cout<<"number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
+    	    cout<<"frame number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
     	    myfile<<cap_nu<<endl<<flush;
             prev_cap=cap_nu;
 
         #ifndef no_process
         // process the captured image
-            roi.x =0; //1200     // 950
-            roi.y =0; //350      //150
-            roi.width = resx[0];  //2360          //2750
-            roi.height = resy[0];  //1235 /2
+            roi.x =0;
+            roi.y =0;
+            roi.width = resx[0];  //1080
+            roi.height = resy[0]; // 1080
             //printf("processing %0d\n",val);
 	    	// crop the 1920x1080 image to 1080x1080
 	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
@@ -163,6 +167,7 @@ void process()
 
             frame_ready=0;
             if(shared_region==0){
+            // no shared region exists
 //                roi.x =0; //1200     // 950
 //                roi.y =0; //350      //150
 //                roi.width = resx[0];  //2360          //2750
@@ -175,37 +180,56 @@ void process()
 	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 // add text overlay -- for debugging purpose
-                stringstream ss;
-                string str1 ;
-                ss << time_now;
-                ss >> str1;
-                cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false); 
-               
+                #ifdef put_overlay
+                    stringstream ss;
+                    string str1 ;
+                    ss << time_now;
+                    ss >> str1;
+                    cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false);
+               #endif
                 writer.write(wFrame);
 	    	    cvReleaseImage(&dst);
             }
             else{
-                roi.x =0; //1200    // 950
-                roi.y =0; //350     //150 
-                roi.width = int(resx[0]*shared_region/100);  //2360          //2750
-                roi.height = resy[0];  //1235 
-            #ifndef avoid_small
-	    	    cvSetImageROI(src, roi);
-	    	    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
-                cvCopy(src, src3);
-	    	    src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
-                cvResize(src3,src1,CV_INTER_LINEAR);
-	    	    dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src1);
-	    	    cvReleaseImage(&bayer);
-                wFrame= cvarrToMat(dst);
-                writer.write(wFrame); 
-	    	    cvReleaseImage(&dst);
-#endif
-                roi.x =roi.width; //1200     // 950
-                roi.y =0; //350     //150 
-                roi.width = resx[0]-roi.width;  //2360          //2750
+                // first write shared region image
+                roi.y =0;
+                roi.width = int((resx[0] * shared_region) / 100);
+                roi.height = resy[0];
+
+                if (shared_region_on_left == true) {
+                    roi.x = 0;
+                }
+                else {
+                // shared region on right side of image frame
+                    roi.x = resx[0] - roi.width - 1;
+                }
+
+                #ifndef avoid_small
+                // specific experiment where only one camera captures shared region
+                    cvSetImageROI(src, roi);
+                    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                    cvCopy(src, src3);
+                    src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
+                    cvResize(src3,src1,CV_INTER_LINEAR);
+                    dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
+                    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+                    cvReleaseImage(&src1);
+                    cvReleaseImage(&bayer);
+                    wFrame= cvarrToMat(dst);
+                    writer.write(wFrame);
+                    cvReleaseImage(&dst);
+                #endif
+                // write non-shared region image
+                roi.y = 0;
+                roi.width = resx[0]-roi.width;
+                if (shared_region_on_left == true){
+                //non-shared region is on right side of frame
+                    roi.x = roi.width;
+                }
+                else{
+                    roi.x = 0;
+                }
+
 	    	    cvSetImageROI(src, roi);
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);

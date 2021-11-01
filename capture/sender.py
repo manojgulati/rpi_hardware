@@ -23,10 +23,12 @@ def send_chuncks(data,lent):
             size = str(len(data)).ljust(16).encode('utf-8')
             sock.send(size)
             sock.send(data)
+
 lenss = 0
 started=0
 while True:
     t = time()
+    # send non-shared region part of image
     if (dur != os.path.getmtime(file1)):
         started=1
         dur = os.path.getmtime(file1)
@@ -37,6 +39,7 @@ while True:
         send_chuncks(l,len(l)) 
         lenss+=len(l)
         f.close()
+    # send shared region of image
     if (dur2 != os.path.getmtime(file2)):
         started=1
         dur2 = os.path.getmtime(file2)
@@ -46,6 +49,7 @@ while True:
         las2=f.tell()
         send_chuncks(l,len(l)) 
         lenss+=len(l)
+
     if (durs != os.path.getmtime(syn)):
         durs = os.path.getmtime(syn)
         f = open(syn)
@@ -54,6 +58,7 @@ while True:
         las3=f.tell()
         send_chuncks(l,len(l)) 
         f.close()
+
     if(started and os.path.exists("running.re")):
         pass
     elif(started):
