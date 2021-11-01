@@ -28,6 +28,7 @@
 #include <fstream>
 //#include <chrono>
 //#define no_process
+#define put_overlay
 #include <opencv2/imgproc.hpp>
 #define BUF_NO 20
 using namespace std;
@@ -211,15 +212,15 @@ void process()
 
                 #ifndef avoid_small
                 // specific experiment where only one camera captures shared region
-                    cvSetImageROI(src, roi);
+                    cvSetImageROI(to_process, roi);
                     src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
-                    cvCopy(src, src3);
+                    cvCopy(to_process, src3);
                     src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
                     cvResize(src3,src1,CV_INTER_LINEAR);
                     dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
                     cvCvtColor(src1, dst, CV_BayerRG2BGR);
                     cvReleaseImage(&src1);
-                    cvReleaseImage(&bayer);
+//                    cvReleaseImage(&bayer);
                     wFrame= cvarrToMat(dst);
                     writer.write(wFrame);
                     cvReleaseImage(&dst);
@@ -229,17 +230,17 @@ void process()
                 roi.width = resx[0]-roi.width;
                 if (shared_region_on_left == true){
                 //non-shared region is on right side of frame
-                    roi.x = roi.width;
+                    roi.x = roi.width - 1;
                 }
                 else{
                     roi.x = 0;
                 }
 
-	    	    cvSetImageROI(src, roi);
+	    	    cvSetImageROI(to_process, roi);
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
-	    	    cvCvtColor(src, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&src);
-	    	    cvReleaseImage(&bayer);
+	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&to_process);
+//	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 writer2.write(wFrame); 
 	    	    cvReleaseImage(&dst);
