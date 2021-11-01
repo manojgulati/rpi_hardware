@@ -189,7 +189,7 @@ void process()
                 #ifdef put_overlay
                     stringstream ss;
                     string str1 ;
-                    ss << time_now;
+                    ss << time_stamp;
                     ss >> str1;
                     cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false);
                #endif
