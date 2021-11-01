@@ -52,6 +52,8 @@ int fourcc = VideoWriter::fourcc('M','J','P','G');
 double fps= 4;
 unsigned long time_now2 = -1;
 unsigned long time_now = -1;
+unsigned long times[BUF_NO];
+unsigned long seqs[BUF_NO];
 VideoWriter writer;
 VideoWriter writer2;
 IplImage *dst,*src1,*src3,*to_process;
@@ -73,18 +75,17 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-static int global_delay=100000 ;
+static int global_delay=200000 ;
 static int gl_dl = global_delay/1000;
 long dl;
 int cap_nu =0;
-int producer_pointer=0;
-int consumer_pointer=0;
+long long int producer_pointer=0;
+long long int consumer_pointer=0;
 void capture()
 {
     int val = 0;
     while(1)
     {
-        cap_nu=val;
         auto t1 = std::chrono::high_resolution_clock::now();
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now2 = (unsigned long)now;
@@ -120,6 +121,7 @@ void capture()
     #endif
         //copied=0;
         #ifndef no_process
+        if((producer_pointer-consumer_pointer)<BUF_NO){
             roi.x =0; //1200     // 950
             roi.y =0; //350      //150
             roi.width = resx[0];  //2360          //2750
@@ -127,13 +129,15 @@ void capture()
 	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
 	    	bayer->imageData = (char *)(buffer_start);
 	    	cvSetImageROI(bayer, roi);
-            cvCopy(bayer, src[producer_pointer]);
+            cvCopy(bayer, src[producer_pointer%BUF_NO]);
+            times[producer_pointer%BUF_NO]=time_now;
+            seqs[producer_pointer%BUF_NO]=val;
             producer_pointer+=1;
-            if(producer_pointer==BUF_NO) {
-                producer_pointer==0;
-            }
+        }
+        else {
+                    cout<<"buff full"<<endl;
+        }
          #endif
-        frame_ready=1;
         val+=1;
      }
      auto t2 = std::chrono::high_resolution_clock::now();
@@ -154,20 +158,22 @@ void process()
 {
     int val = 1;
     int prev_cap =0;
+    unsigned long int time_stamp=0;
     while(val<iter+1) 
     {
-        while((frame_ready==0) || (prev_cap == cap_nu)){
-            //printf("%0d %0d\n",prev_cap,cap_nu);
+        while(producer_pointer==consumer_pointer){
             usleep(1000);
         }
     #ifndef no_process
-        if(frame_ready)
+        if(1)
         {
-    	    cout<<"number "<<cap_nu<<" "<<val<<" "<<time_now <<endl;
+            time_stamp=times[consumer_pointer%20];
+            cap_nu=seqs[consumer_pointer%20];
+    	    cout<<"producer "<<producer_pointer<<"consumer "<<consumer_pointer <<endl;
     	    myfile<<cap_nu<<endl<<flush;
-            prev_cap=cap_nu;
 	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-            cvCopy(src[0],to_process);
+            cvCopy(src[consumer_pointer%20],to_process);
+            consumer_pointer+=1;
 
 
             if(shared_region==0){
@@ -179,7 +185,7 @@ void process()
                 // add text overlay -- for debugging purpose
                 stringstream ss;
                 string str1 ;
-                ss << time_now;
+                ss << time_stamp;
                 ss >> str1;
                 cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false); 
                
