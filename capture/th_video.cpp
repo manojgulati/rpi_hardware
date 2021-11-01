@@ -75,7 +75,7 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-static int global_delay=200000 ;
+static int global_delay=100000 ;
 static int gl_dl = global_delay/1000;
 long dl;
 int cap_nu =0;
@@ -133,6 +133,7 @@ void capture()
             times[producer_pointer%BUF_NO]=time_now;
             seqs[producer_pointer%BUF_NO]=val;
             producer_pointer+=1;
+	    	cvReleaseImage(&bayer);
         }
         else {
                     cout<<"buff full"<<endl;
@@ -179,8 +180,8 @@ void process()
             if(shared_region==0){
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
+	    	    cvReleaseImage(&to_process);
                 frame_ready=0;
-	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 // add text overlay -- for debugging purpose
                 stringstream ss;
@@ -207,7 +208,6 @@ void process()
 	    	    dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(src1, dst, CV_BayerRG2BGR);
 	    	    cvReleaseImage(&src1);
-	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 writer.write(wFrame); 
 	    	    cvReleaseImage(&dst);
@@ -220,7 +220,6 @@ void process()
 	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
 	    	    cvReleaseImage(&to_process);
-	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
                 writer2.write(wFrame); 
 	    	    cvReleaseImage(&dst);
