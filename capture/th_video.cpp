@@ -84,18 +84,19 @@ long dl;
 int cap_nu =0;
 long long int producer_pointer=0;
 long long int consumer_pointer=0;
-int first_time = 1;
+bool first_capture=1;
+bool first_process=1;
 void capture()
 {
     int val = 0;
     while(1)
     {
         //auto t1 = std::chrono::high_resolution_clock::now();
-	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        time_now2 = (unsigned long)now;
-        dl = (gl_dl-(time_now2 %gl_dl))%gl_dl;
+//	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+//        time_now2 = (unsigned long)now;
+//        dl = (gl_dl-(time_now2 %gl_dl))%gl_dl;
         //usleep(dl*1000);
-	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now  = (unsigned long)now;
         //        if((int)((time_now-prev_time+3)/10)!=(int)(gl_dl/10)){
            // cout<<"missalignment" << prev_time <<" "<<time_now<<" "<<time_now2<<endl;
@@ -141,14 +142,16 @@ void capture()
             roi.y =0; //350      //150
             roi.width = resx[0];  //2360          //2750
             roi.height = resy[0];  //1235 /2
-	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
+            if(first_capture){
+	    	    bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
+               first_capture=0; 
+            }
 	    	bayer->imageData = (char *)(buffer_start);
 	    	cvSetImageROI(bayer, roi);
             cvCopy(bayer, src[producer_pointer%BUF_NO]);
             times[producer_pointer%BUF_NO]=time_now;
             seqs[producer_pointer%BUF_NO]=val;
             producer_pointer+=1;
-	    	cvReleaseImage(&bayer);
         }
         else {
                     cout<<"buff full "<<" "<<producer_pointer<<" "<<consumer_pointer<<endl;
@@ -179,22 +182,29 @@ void process()
         while(producer_pointer==consumer_pointer){
             usleep(1000);
         }
+        auto t1 = std::chrono::high_resolution_clock::now();
     #ifndef no_process
         if(1)
         {
+        vector<int> p(2);
+        p[0] = CV_IMWRITE_JPEG_QUALITY;
+        p[1] = 50; // compression factor
+
             time_stamp=times[consumer_pointer%BUF_NO];
             cap_nu=seqs[consumer_pointer%BUF_NO];
-    	    //cout<<"producer "<<producer_pointer<<"consumer "<<consumer_pointer <<endl;
     	    myfile<<cap_nu<<endl<<flush;
-	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+            if(first_process){
+	            to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
+            }
             cvCopy(src[consumer_pointer%BUF_NO],to_process);
             consumer_pointer+=1;
 
 
             if(shared_region==0){
-	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
+                if(first_process){
+	    	        dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
+                }
 	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&to_process);
                 frame_ready=0;
                 wFrame= cvarrToMat(dst);
                 // add text overlay -- for debugging purpose
@@ -206,7 +216,6 @@ void process()
                     cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false);
                #endif
                 writer.write(wFrame);
-	    	    cvReleaseImage(&dst);
             }
             else{
                 // first write shared region image
@@ -225,18 +234,16 @@ void process()
                 #ifndef avoid_small
                 // specific experiment where only one camera captures shared region
                     cvSetImageROI(to_process, roi);
-                    src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                    if(first_process){
+                        src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
+                        src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
+                        dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
+                    }
                     cvCopy(to_process, src3);
-                    src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
                     cvResize(src3,src1,CV_INTER_LINEAR);
-                    dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
                     cvCvtColor(src1, dst, CV_BayerRG2BGR);
-                    cvReleaseImage(&src1);
-//                    cvReleaseImage(&bayer);
                     wFrame= cvarrToMat(dst);
-                    cv::imwrite("reduced_res.jpg",wFrame);
                     writer.write(wFrame);
-                    cvReleaseImage(&dst);
                 #endif
                 // write non-shared region image
                 roi.y = 0;
@@ -250,14 +257,11 @@ void process()
                 }
 
 	    	    cvSetImageROI(to_process, roi);
-	    	    dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
+                if(first_process)
+	    	        dst = cvCreateImage({roi.width,roi.height}, IPL_DEPTH_8U, 3);
 	    	    cvCvtColor(to_process, dst, CV_BayerRG2BGR);
-	    	    cvReleaseImage(&to_process);
-//	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
-                    cv::imwrite("full_res.jpg",wFrame);
                 writer2.write(wFrame); 
-	    	    cvReleaseImage(&dst);
             }
          #else
             frame_ready=0;
@@ -265,6 +269,11 @@ void process()
             val+=1;
         }
         
+     auto t2 = std::chrono::high_resolution_clock::now();
+     auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+        first_process=0;
+    // delay = global_delay- int(duration);
+    std::cout<<"capture duratoin"<<duration/1000<<std::endl;
     }
     done=1;
 }
@@ -340,7 +349,7 @@ void setup()
         writer2.open("test2.avi",fourcc,fps,S);
     }
     control.id = V4L2_CID_VBLANK;
-     control.value=2100;
+     control.value=651;
     /* Your loops end here. */
         if(ioctl(fd, VIDIOC_S_CTRL, &control) < 0){
             perror("VDIOC_S_CTRL");
@@ -352,7 +361,7 @@ void setup()
 }
 
 int main(int argc, char** argv){
-        static int align=15000;
+        static int align=5000;
     // read cmd line args
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);

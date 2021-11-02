@@ -117,4 +117,4 @@ __used __section("__versions") = {
 MODULE_INFO(depends, "videobuf2-v4l2,bcm2835-mmal-vchiq,videodev,mc,videobuf2-common,vc-sm-cma,videobuf2-dma-contig");
 
 
-MODULE_INFO(srcversion, "18DFCD34CF466DBDF231487");
+MODULE_INFO(srcversion, "381FD6A7D9643037FC0D644");

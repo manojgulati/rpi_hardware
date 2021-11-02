@@ -65,8 +65,8 @@ MODULE_PARM_DESC(video_nr, "base video device number");
 /* Per-queue, driver-specific private data */
 int set_gamma = 0;
 int set_denoise = 0;
-int set_blue = 0; 
-int set_red = 0;
+int set_blue = 1; 
+int set_red = 1;
 int set_ccmatrix = 0;
 int set_blelvel = 0;
 int set_geq = 0;
@@ -74,7 +74,7 @@ int set_cdn = 0;
 int set_sharpen = 0;
 int set_dpc = 0;
 int set_lenshading = 0;
-int set_dg = 1;
+int set_dg = 0;
 struct bcm2835_isp_q_data {
 	/*
 	 * These parameters should be treated as gospel, with everything else
