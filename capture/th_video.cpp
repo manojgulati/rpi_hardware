@@ -338,7 +338,7 @@ void setup()
         writer2.open("test2.avi",fourcc,fps,S);
     }
     control.id = V4L2_CID_VBLANK;
-     control.value=5000;
+     control.value=2100;
     /* Your loops end here. */
         if(ioctl(fd, VIDIOC_S_CTRL, &control) < 0){
             perror("VDIOC_S_CTRL");
@@ -351,14 +351,6 @@ void setup()
 
 int main(int argc, char** argv){
         static int align=15000;
-	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        time_now2 = (unsigned long)now;
-        dl = (align-(time_now2 %align))%align;
-        usleep(dl*1000);
-	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        time_now2 = (unsigned long)now;
-    cout << "starting time "<<time_now2<<endl;
-
     // read cmd line args
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);
@@ -366,6 +358,14 @@ int main(int argc, char** argv){
     // setup the system
     system("echo r> running.re");
     setup();
+
+	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        time_now2 = (unsigned long)now;
+        dl = (align-(time_now2 %align))%align;
+        usleep(dl*1000);
+	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        time_now2 = (unsigned long)now;
+    cout << "starting time "<<time_now2<<endl;
 
     #ifndef switch_stream
         	if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
