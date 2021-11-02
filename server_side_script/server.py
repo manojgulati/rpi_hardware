@@ -65,7 +65,6 @@ while(1):
             for ss in sequence:
                 seq.append(int(ss))
             #print(seq)
-            
         a = buff1.find(b'\xff\xd8')
         b = buff1.find(b'\xff\xd9')
         if(a!=-1 and b!=-1):
@@ -82,22 +81,28 @@ while(1):
             #cv2.putText(img,'frame '+str(frame1), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
             print(frame1,str(seq[frame1-1]))
             cv2.imwrite(folder+'/frame1_'+str(seq[frame1-1])+'.jpg',img1)
-            smal=cv2.resize(img,(600,600))
+            #smal=cv2.resize(img,(600,600))
             #print("fram1",frame1)
-            cv2.imshow("cam8",smal)
+            cv2.imshow("cam1",img)
             cv2.waitKey(3)
         a = buff2.find(b'\xff\xd8')
         b = buff2.find(b'\xff\xd9')
         if(a!=-1 and b!=-1):
             frame2+=1
+            #print(a,b)
             jpg = buff2[a:b+2]
             buff2=buff2[b+2:]
-            img = cv2.imdecode(np.fromstring(jpg, dtype='uint8'),cv2.IMREAD_COLOR)
-            img = process(img)
+            ff=np.fromstring(jpg, dtype='uint8')
+            #print(ff)
+            img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
+            #print(img.shape)
+            #img = process(img)
             img1 = img[:,:]
-            #cv2.putText(img,'frame '+str(frame2), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
-            cv2.imwrite('frame2_'+str(frame2)+'.jpg',img1)
-            cv2.imshow("feed 4",smal)
+            print(frame1,str(seq[frame2-1]))
+            cv2.imwrite(folder+'/frame2_'+str(seq[frame2-1])+'.jpg',img1)
+            #smal=cv2.resize(img,(600,600))
+            #print("fram1",frame1)
+            cv2.imshow("cam2",img)
             cv2.waitKey(3)
     else:
         print("Breaking..")
