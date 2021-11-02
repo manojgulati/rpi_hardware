@@ -20,7 +20,7 @@
 #define CV_NO_BACKWARD_COMPATIBILITY
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#define avoid_small
+//#define avoid_small
 //#define switch_stream
 #include <thread>
 #include <ctime>
@@ -219,7 +219,7 @@ void process()
                 }
                 else {
                 // shared region on right side of image frame
-                    roi.x = resx[0] - roi.width - 1;
+                    roi.x = resx[0] - roi.width ;
                 }
 
                 #ifndef avoid_small
@@ -234,6 +234,7 @@ void process()
                     cvReleaseImage(&src1);
 //                    cvReleaseImage(&bayer);
                     wFrame= cvarrToMat(dst);
+                    cv::imwrite("reduced_res.jpg",wFrame);
                     writer.write(wFrame);
                     cvReleaseImage(&dst);
                 #endif
@@ -242,7 +243,7 @@ void process()
                 roi.width = resx[0]-roi.width;
                 if (shared_region_on_left == true){
                 //non-shared region is on right side of frame
-                    roi.x = roi.width - 1;
+                    roi.x = roi.width ;
                 }
                 else{
                     roi.x = 0;
@@ -254,6 +255,7 @@ void process()
 	    	    cvReleaseImage(&to_process);
 //	    	    cvReleaseImage(&bayer);
                 wFrame= cvarrToMat(dst);
+                    cv::imwrite("full_res.jpg",wFrame);
                 writer2.write(wFrame); 
 	    	    cvReleaseImage(&dst);
             }
@@ -329,13 +331,24 @@ void setup()
     }
     else
     {
+        if(shared_region_on_left==true){
         
-        S = Size((width*shared_region)/(scale*100),height/scale);
-    //    writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
-        writer.open("test.avi",fourcc,fps,S);
-        S = Size(width-(width*shared_region)/100,height);
-        //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
-        writer2.open("test2.avi",fourcc,fps,S);
+            S = Size((width*shared_region)/(scale*100),height/scale);
+    //        writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+            writer.open("test.avi",fourcc,fps,S);
+            S = Size(width-(width*shared_region)/100,height);
+            //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
+            writer2.open("test2.avi",fourcc,fps,S);
+        }
+        else{
+        
+            S = Size((width*shared_region)/(scale*100),height/scale);
+    //        writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
+            writer2.open("test.avi",fourcc,fps,S);
+            S = Size(width-(width*shared_region)/100,height);
+            //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
+            writer.open("test2.avi",fourcc,fps,S);
+        }
     }
     control.id = V4L2_CID_VBLANK;
      control.value=2100;
