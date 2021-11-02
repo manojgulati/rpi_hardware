@@ -100,6 +100,7 @@ void capture()
         time_now  = (unsigned long)now;
         //        if((int)((time_now-prev_time+3)/10)!=(int)(gl_dl/10)){
            // cout<<"missalignment" << prev_time <<" "<<time_now<<" "<<time_now2<<endl;
+            if(val<10)
             cout<<"duaration "<<time_now-prev_time<<" ms "<<time_now<<"frame number"<<val<<endl;
          //   val+=1-first_time;
          //   first_time=0;
@@ -198,6 +199,7 @@ void process()
             }
             cvCopy(src[consumer_pointer%BUF_NO],to_process);
             consumer_pointer+=1;
+            cout<<"producer "<<producer_pointer<<" consumer "<<consumer_pointer<<endl;
 
 
             if(shared_region==0){
@@ -273,7 +275,7 @@ void process()
      auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
         first_process=0;
     // delay = global_delay- int(duration);
-    std::cout<<"capture duratoin"<<duration/1000<<std::endl;
+   // std::cout<<"capture duratoin"<<duration/1000<<std::endl;
     }
     done=1;
 }
