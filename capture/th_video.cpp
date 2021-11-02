@@ -30,7 +30,7 @@
 //#define no_process
 #define put_overlay
 #include <opencv2/imgproc.hpp>
-#define BUF_NO 1
+#define BUF_NO 100
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
@@ -54,6 +54,7 @@ int fourcc = VideoWriter::fourcc('M','J','P','G');
 double fps= 4;
 unsigned long time_now2 = -1;
 unsigned long time_now = -1;
+unsigned long prev_time = -1;
 unsigned long times[BUF_NO];
 unsigned long seqs[BUF_NO];
 VideoWriter writer;
@@ -83,18 +84,30 @@ long dl;
 int cap_nu =0;
 long long int producer_pointer=0;
 long long int consumer_pointer=0;
+int first_time = 1;
 void capture()
 {
     int val = 0;
     while(1)
     {
-        auto t1 = std::chrono::high_resolution_clock::now();
+        //auto t1 = std::chrono::high_resolution_clock::now();
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now2 = (unsigned long)now;
         dl = (gl_dl-(time_now2 %gl_dl))%gl_dl;
-        usleep(dl*1000);
+        //usleep(dl*1000);
 	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now  = (unsigned long)now;
+        //        if((int)((time_now-prev_time+3)/10)!=(int)(gl_dl/10)){
+           // cout<<"missalignment" << prev_time <<" "<<time_now<<" "<<time_now2<<endl;
+            cout<<"duaration "<<time_now-prev_time<<" ms "<<time_now<<"frame number"<<val<<endl;
+         //   val+=1-first_time;
+         //   first_time=0;
+        //}
+        //else{
+        //
+        //    cout<<"alignment" << prev_time <<" "<<time_now<<" "<<time_now2<<endl;
+        //}
+        prev_time= time_now;
         //cout <<"capture num" << time_now<<endl;
         if(1)
         {
@@ -138,20 +151,20 @@ void capture()
 	    	cvReleaseImage(&bayer);
         }
         else {
-                    cout<<"buff full"<<endl;
+                    cout<<"buff full "<<" "<<producer_pointer<<" "<<consumer_pointer<<endl;
         }
          #endif
         val+=1;
      }
-     auto t2 = std::chrono::high_resolution_clock::now();
-     auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
-     delay = global_delay- int(duration);
+   //  auto t2 = std::chrono::high_resolution_clock::now();
+   //  auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+   //  delay = global_delay- int(duration);
    // std::cout<<"capture delay"<<delay<<std::endl;
-    if(delay<0){
-        delay=0;
-    }
+    //if(delay<0){
+    //    delay=0;
+    //}
     // std::cout << delay<<std::endl;
-     usleep(delay);
+  //   usleep(delay);
      if(done){
          break;
      }
@@ -160,7 +173,6 @@ void capture()
 void process()
 {
     int val = 1;
-    int prev_cap =0;
     unsigned long int time_stamp=0;
     while(val<iter+1) 
     {
@@ -172,7 +184,7 @@ void process()
         {
             time_stamp=times[consumer_pointer%BUF_NO];
             cap_nu=seqs[consumer_pointer%BUF_NO];
-    	    cout<<"producer "<<producer_pointer<<"consumer "<<consumer_pointer <<endl;
+    	    //cout<<"producer "<<producer_pointer<<"consumer "<<consumer_pointer <<endl;
     	    myfile<<cap_nu<<endl<<flush;
 	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
             cvCopy(src[consumer_pointer%BUF_NO],to_process);
@@ -325,6 +337,13 @@ void setup()
         //writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
         writer2.open("test2.avi",fourcc,fps,S);
     }
+    control.id = V4L2_CID_VBLANK;
+     control.value=5000;
+    /* Your loops end here. */
+        if(ioctl(fd, VIDIOC_S_CTRL, &control) < 0){
+            perror("VDIOC_S_CTRL");
+            exit(1);
+        }
     for(int i=0; i<BUF_NO; i++){
 	    src[i] = cvCreateImage(sz, IPL_DEPTH_8U, 1);
     }
