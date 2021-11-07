@@ -196,13 +196,13 @@ void process()
                 frame_ready=0;
                 wFrame= cvarrToMat(dst);
                 // add text overlay -- for debugging purpose
-          //      #ifdef put_overlay
-          //          stringstream ss;
-          //          string str1 ;
-          //          ss << time_stamp;
-          //          ss >> str1;
-          //          cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false);
-          //     #endif
+                #ifdef put_overlay
+                    stringstream ss;
+                    string str1 ;
+                    ss << time_stamp;
+                    ss >> str1;
+                    cv::putText(wFrame,str1,cv::Point(30,30),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,255,255),1,false);
+               #endif
                 writer.write(wFrame);
                 cvReleaseImage(&dst);
                 cvReleaseImage(&to_process);
@@ -359,7 +359,7 @@ void setup()
 }
 
 int main(int argc, char** argv){
-        static int align=5000;
+        static int align=10000;
     // read cmd line args
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);
