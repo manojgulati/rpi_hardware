@@ -1,0 +1,3 @@
+./master_script.py 1 0 1000 2000 2000 1 5 192.168.18.2
+<client_id> <percentage_shared_region> <number_images_to_capture> <exposure> <vblank> <shared_region_on_the_left> <downsample_scale> <server_ip> (optional)
+

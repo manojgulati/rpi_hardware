@@ -31,12 +31,12 @@
 #define put_overlay
 #include <opencv2/imgproc.hpp>
 #define BUF_NO 100
+int vblank;
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
 ofstream myfile;
 int fd;
-int scaler=1;
 vector<uchar> buf;  
 int resolution_region[4]= {0,0,0,0};
 int type;
@@ -46,7 +46,7 @@ int height=1080;
 int width=1080;
 int w1=1920;
 int h1=1080;
-bool shared_region_on_left=true; // position of shared region (left/right) in  the image frame
+bool shared_region_on_left=false; // position of shared region (left/right) in  the image frame
 Size S;
 const string filename="/run/user/1000/images/test.mp4";
 int fourcc = VideoWriter::fourcc('M','J','P','G');
@@ -70,7 +70,7 @@ struct v4l2_buffer bufferinfo;
 int resx[15] = { width, 1100, 900, 900, 800, 700,  600, 600, 512 , 440, 360, 224, 160, 96, 70};
 int resy[15] = { height,  800,  900, 800, 800, 800 , 800, 600, 512 , 440, 360, 224, 160, 96, 70};
 int shared_region=0;
-int scale=5; 
+int scale=3; 
 int iter;
 CvSize sz = { width, height };
 cv::Rect roi;
@@ -213,6 +213,7 @@ void process()
 
                 roi.y =0;
                 roi.width = int((resx[0] * shared_region) / 100);
+                roi.width -= roi.width%scale;
                 roi.height = resy[0];
 
                 if (shared_region_on_left == true) {
@@ -232,7 +233,12 @@ void process()
                     dst = cvCreateImage({roi.width/scale,roi.height/scale}, IPL_DEPTH_8U, 3);
                     cvCopy(to_process, src3);
                     cvResize(src3,src1,CV_INTER_LINEAR);
-                    cvCvtColor(src1, dst, CV_BayerRG2BGR);
+                    if(scale==3){
+                        cvCvtColor(src1, dst, CV_BayerBG2BGR);
+                    }
+                    else{
+                        cvCvtColor(src1, dst, CV_BayerRG2BGR);
+                    }
                     cvReleaseImage(&src3);  
                     cvReleaseImage(&src1);  
                     wFrame= cvarrToMat(dst);
@@ -338,16 +344,16 @@ void setup()
     }
     else
     {
-       
-        S = Size((width*shared_region)/(scale*100),height/scale);
+       int ww= (((width*shared_region)/100)-(((width*shared_region)/100)%scale));
+        S = Size(ww/scale,height/scale);
     //    writer.open("/run/user/1000/images/test.avi",fourcc,fps,S);
         writer.open("test.avi",fourcc,fps,S);
-        S = Size(width-(width*shared_region)/100,height);
+        S = Size(width-ww,height);
     //    writer2.open("/run/user/1000/images/test2.avi",fourcc,fps,S);
         writer2.open("test2.avi",fourcc,fps,S);
     }
     control.id = V4L2_CID_VBLANK;
-     control.value=2000;
+     control.value=vblank;
     /* Your loops end here. */
         if(ioctl(fd, VIDIOC_S_CTRL, &control) < 0){
             perror("VDIOC_S_CTRL");
@@ -363,6 +369,9 @@ int main(int argc, char** argv){
     // read cmd line args
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);
+    vblank=atoi(argv[3]);
+    shared_region_on_left=atoi(argv[4]);
+    scale=atoi(argv[5]);
 
     // setup the system
     system("echo r> running.re");
