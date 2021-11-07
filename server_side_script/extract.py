@@ -1,7 +1,8 @@
-import cv2,sys
+import cv2
 import numpy as np
-
-vid = cv2.VideoCapture("test.avi")
+import sys
+file_name = sys.argv[1]
+vid = cv2.VideoCapture(file_name)
 iters=0
 while(True):
     iters+=1
@@ -12,7 +13,7 @@ while(True):
     frame1= frame #[:800,:1200]
     #print(frame1)
 
-    g=int(sys.argv[1])
+    g=float(sys.argv[2])
     if(iters):
         frame1 = cv2.flip(frame1,0)
         frame1 = cv2.flip(frame1,1)
@@ -26,12 +27,12 @@ while(True):
         img = np.clip( (frame1 - inBlack) / (inWhite - inBlack), 0, 255 )                            
         img = ( img ** (1/inGamma) ) *  (outWhite - outBlack) + outBlack
         img = np.clip( img, 0, 255).astype(np.uint8)
-        img=cv2.medianBlur(img,5)
-        cv2.imwrite("color"+str(iters)+".jpg",img)
+#        img=cv2.medianBlur(img,5)
+        cv2.imwrite(file_name+"_color"+str(iters)+".jpg",img)
 #        img = cv2.fastNlMeansDenoisingColored(img,None,7,7,5,21)  
         print(iters)
-        fr=cv2.resize(img,(700,700))
-        cv2.imshow('frame', fr)
+        #fr=cv2.resize(img,(700,700))
+        cv2.imshow('frame', img)
         cv2.imwrite("color_corrected"+str(iters)+".jpg",img)
         # the 'q' button is set as the
         # quitting button you may use any

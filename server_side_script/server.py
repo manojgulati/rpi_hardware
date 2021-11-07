@@ -90,7 +90,12 @@ while(1):
             print(frame1,str(seq[frame1-1]))
             #cv2.imwrite(folder+'/frame1_'+str(seq[frame1-1])+'.jpg',img1)
             video1.write(img1)
-            smal=cv2.resize(img,(600,600))
+            scale=(1080/height)
+            hh= height*scale
+            ww= width*scale
+            hh1 = int(hh/1080*600)
+            ww1 = int(ww/1080*600)
+            smal=cv2.resize(img1,(ww1,hh1))
             #print("fram1",frame1)
             cv2.imshow("cam1",smal)
             cv2.waitKey(3)
@@ -114,11 +119,17 @@ while(1):
             #img = process(img)
             img1 = img[:,:]
             print(frame1,str(seq[frame2-1]))
+            scale=(1080/height)
+            hh= height*scale
+            ww= width*scale
+            hh1 = int(hh/1080*600)
+            ww1 = int(ww/1080*600)
+            smal=cv2.resize(img1,(ww1,hh1))
             #cv2.imwrite(folder+'/frame2_'+str(seq[frame2-1])+'.jpg',img1)
-            video1.write(img1)
+            video2.write(img1)
             #smal=cv2.resize(img,(600,600))
             #print("fram1",frame1)
-            cv2.imshow("cam2",img)
+            cv2.imshow("cam2",smal)
             cv2.waitKey(3)
     else:
         print("Breaking..")
