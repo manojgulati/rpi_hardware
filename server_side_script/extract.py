@@ -1,4 +1,4 @@
-import cv2
+import cv2,sys
 import numpy as np
 
 vid = cv2.VideoCapture("test.avi")
@@ -12,7 +12,7 @@ while(True):
     frame1= frame #[:800,:1200]
     #print(frame1)
 
-    g=1.2
+    g=int(sys.argv[1])
     if(iters):
         frame1 = cv2.flip(frame1,0)
         frame1 = cv2.flip(frame1,1)
@@ -26,8 +26,9 @@ while(True):
         img = np.clip( (frame1 - inBlack) / (inWhite - inBlack), 0, 255 )                            
         img = ( img ** (1/inGamma) ) *  (outWhite - outBlack) + outBlack
         img = np.clip( img, 0, 255).astype(np.uint8)
+        img=cv2.medianBlur(img,5)
         cv2.imwrite("color"+str(iters)+".jpg",img)
-        img = cv2.fastNlMeansDenoisingColored(img,None,5,5,3,15)  
+#        img = cv2.fastNlMeansDenoisingColored(img,None,7,7,5,21)  
         print(iters)
         fr=cv2.resize(img,(700,700))
         cv2.imshow('frame', fr)
