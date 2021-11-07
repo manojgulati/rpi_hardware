@@ -28,6 +28,10 @@ buff2=b''
 frame1=0
 frame2=0
 g=1.5
+fps=8
+fourcc=cv2.VideoWriter_fourcc(*'MJPG')
+writer1_open=0
+writer2_open=0
 def process(frame):
     return frame
     inBlack  = np.array([0, 0, 0], dtype=np.float32)
@@ -75,12 +79,17 @@ while(1):
             ff=np.fromstring(jpg, dtype='uint8')
             #print(ff)
             img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
-            #print(img.shape)
+            print(img.shape)
+            (height,width,_) = img.shape
             #img = process(img)
             img1 = img[:,:]
+            if(writer1_open==0):
+                video1 = cv2.VideoWriter(folder+'/test.avi',fourcc, fps, (width,height))
+                writer1_open=1
             #cv2.putText(img,'frame '+str(frame1), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
             print(frame1,str(seq[frame1-1]))
-            cv2.imwrite(folder+'/frame1_'+str(seq[frame1-1])+'.jpg',img1)
+            #cv2.imwrite(folder+'/frame1_'+str(seq[frame1-1])+'.jpg',img1)
+            video1.write(img1)
             smal=cv2.resize(img,(600,600))
             #print("fram1",frame1)
             cv2.imshow("cam1",smal)
@@ -96,10 +105,17 @@ while(1):
             #print(ff)
             img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
             #print(img.shape)
+            img1 = img[:,:]
+            print(img.shape)
+            (height,width,_) = img1.shape
+            if(writer2_open==0):
+                video2 = cv2.VideoWriter(folder+'/test2.avi',fourcc, fps, (width,height))
+                writer2_open=1
             #img = process(img)
             img1 = img[:,:]
             print(frame1,str(seq[frame2-1]))
-            cv2.imwrite(folder+'/frame2_'+str(seq[frame2-1])+'.jpg',img1)
+            #cv2.imwrite(folder+'/frame2_'+str(seq[frame2-1])+'.jpg',img1)
+            video1.write(img1)
             #smal=cv2.resize(img,(600,600))
             #print("fram1",frame1)
             cv2.imshow("cam2",img)
