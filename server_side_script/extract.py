@@ -28,8 +28,8 @@ while(True):
         img = ( img ** (1/inGamma) ) *  (outWhite - outBlack) + outBlack
         img = np.clip( img, 0, 255).astype(np.uint8)
 #        img=cv2.medianBlur(img,5)
+        img = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)  
         cv2.imwrite(file_name+"_color"+str(iters)+".jpg",img)
-#        img = cv2.fastNlMeansDenoisingColored(img,None,7,7,5,21)  
         print(iters)
         #fr=cv2.resize(img,(700,700))
         cv2.imshow('frame', img)

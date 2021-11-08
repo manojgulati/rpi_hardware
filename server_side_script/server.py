@@ -51,6 +51,7 @@ def process(frame):
 seq=[]
 while(1):
     if 1:
+        hit=1
         font                   = cv2.FONT_HERSHEY_SIMPLEX
         bottomLeftCornerOfText = (30,30)
         fontScale              = 0.5
@@ -63,74 +64,80 @@ while(1):
             buff1+=stringData[1:]
         if(stringData[0]==50):
             buff2+=stringData[1:]
-        if(stringData[0]==51):
-            sequence= stringData[1:]
-            sequence= sequence.splitlines()
-            for ss in sequence:
-                seq.append(int(ss))
-            #print(seq)
-        a = buff1.find(b'\xff\xd8')
-        b = buff1.find(b'\xff\xd9')
-        if(a!=-1 and b!=-1):
-            frame1+=1
-            #print(a,b)
-            jpg = buff1[a:b+2]
-            buff1=buff1[b+2:]
-            ff=np.fromstring(jpg, dtype='uint8')
-            #print(ff)
-            img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
-            print(img.shape)
-            (height,width,_) = img.shape
-            #img = process(img)
-            img1 = img[:,:]
-            if(writer1_open==0):
-                video1 = cv2.VideoWriter(folder+'/test.avi',fourcc, fps, (width,height))
-                writer1_open=1
-            #cv2.putText(img,'frame '+str(frame1), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
-            print(frame1,str(seq[frame1-1]))
-            #cv2.imwrite(folder+'/frame1_'+str(seq[frame1-1])+'.jpg',img1)
-            video1.write(img1)
-            scale=(1080/height)
-            hh= height*scale
-            ww= width*scale
-            hh1 = int(hh/1080*600)
-            ww1 = int(ww/1080*600)
-            smal=cv2.resize(img1,(ww1,hh1))
-            #print("fram1",frame1)
-            cv2.imshow("cam1",smal)
-            cv2.waitKey(3)
-        a = buff2.find(b'\xff\xd8')
-        b = buff2.find(b'\xff\xd9')
-        if(a!=-1 and b!=-1):
-            frame2+=1
-            #print(a,b)
-            jpg = buff2[a:b+2]
-            buff2=buff2[b+2:]
-            ff=np.fromstring(jpg, dtype='uint8')
-            #print(ff)
-            img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
-            #print(img.shape)
-            img1 = img[:,:]
-            print(img.shape)
-            (height,width,_) = img1.shape
-            if(writer2_open==0):
-                video2 = cv2.VideoWriter(folder+'/test2.avi',fourcc, fps, (width,height))
-                writer2_open=1
-            #img = process(img)
-            img1 = img[:,:]
-            print(frame1,str(seq[frame2-1]))
-            scale=(1080/height)
-            hh= height*scale
-            ww= width*scale
-            hh1 = int(hh/1080*600)
-            ww1 = int(ww/1080*600)
-            smal=cv2.resize(img1,(ww1,hh1))
-            #cv2.imwrite(folder+'/frame2_'+str(seq[frame2-1])+'.jpg',img1)
-            video2.write(img1)
-            #smal=cv2.resize(img,(600,600))
-            #print("fram1",frame1)
-            cv2.imshow("cam2",smal)
-            cv2.waitKey(3)
+        #if(stringData[0]==51):
+        #    sequence= stringData[1:]
+        #    sequence= sequence.splitlines()
+        #    for ss in sequence:
+        #        seq.append(int(ss))
+        #    #print(seq)
+        while(hit==1):
+            hit=0
+            a = buff1.find(b'\xff\xd8')
+            b = buff1.find(b'\xff\xd9')
+            if(a!=-1 and b!=-1):
+                hit=1
+                frame1+=1
+                #print(a,b)
+                jpg = buff1[a:b+2]
+                buff1=buff1[b+2:]
+                ff=np.fromstring(jpg, dtype='uint8')
+                #print(ff)
+                img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
+                print(img.shape)
+                (height,width,_) = img.shape
+                #img = process(img)
+                img1 = img[:,:]
+                if(writer1_open==0):
+                    video1 = cv2.VideoWriter(folder+'/test.avi',fourcc, fps, (width,height))
+                    writer1_open=1
+                #cv2.putText(img,'frame '+str(frame1), bottomLeftCornerOfText,font,fontScale,fontColor,lineType)
+                #print(frame1,str(seq[frame1-1]))
+                #cv2.imwrite(folder+'/frame1_'+str(seq[frame1-1])+'.jpg',img1)
+                print(TCP_PORT," frame1_no ",frame1)
+                video1.write(img1)
+                scale=(1080/height)
+                hh= height*scale
+                ww= width*scale
+                hh1 = int(hh/1080*600)
+                ww1 = int(ww/1080*600)
+                smal=cv2.resize(img1,(ww1,hh1))
+                #print("fram1",frame1)
+                cv2.imshow("cam1",smal)
+                cv2.waitKey(3)
+            a = buff2.find(b'\xff\xd8')
+            b = buff2.find(b'\xff\xd9')
+            if(a!=-1 and b!=-1):
+                hit=1
+                frame2+=1
+                #print(a,b)
+                jpg = buff2[a:b+2]
+                buff2=buff2[b+2:]
+                ff=np.fromstring(jpg, dtype='uint8')
+                print(TCP_PORT," frame2_no ",frame2)
+                #print(ff)
+                img = cv2.imdecode(ff,cv2.IMREAD_COLOR)
+                #print(img.shape)
+                img1 = img[:,:]
+                print(img.shape)
+                (height,width,_) = img1.shape
+                if(writer2_open==0):
+                    video2 = cv2.VideoWriter(folder+'/test2.avi',fourcc, fps, (width,height))
+                    writer2_open=1
+                #img = process(img)
+                img1 = img[:,:]
+                #print(frame1,str(seq[frame2-1]))
+                scale=(1080/height)
+                hh= height*scale
+                ww= width*scale
+                hh1 = int(hh/1080*600)
+                ww1 = int(ww/1080*600)
+                smal=cv2.resize(img1,(ww1,hh1))
+                #cv2.imwrite(folder+'/frame2_'+str(seq[frame2-1])+'.jpg',img1)
+                video2.write(img1)
+                #smal=cv2.resize(img,(600,600))
+                #print("fram1",frame1)
+                cv2.imshow("cam2",smal)
+                cv2.waitKey(3)
     else:
         print("Breaking..")
         break
