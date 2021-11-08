@@ -49,6 +49,7 @@ def process(frame):
     #img = cv2.medianBlur(img,5)
     return img 
 seq=[]
+seq_file=open("seq.txt","w")
 while(1):
     if 1:
         hit=1
@@ -64,12 +65,12 @@ while(1):
             buff1+=stringData[1:]
         if(stringData[0]==50):
             buff2+=stringData[1:]
-        #if(stringData[0]==51):
-        #    sequence= stringData[1:]
-        #    sequence= sequence.splitlines()
-        #    for ss in sequence:
-        #        seq.append(int(ss))
-        #    #print(seq)
+        if(stringData[0]==51):
+            sequence= stringData[1:]
+            sequence= sequence.splitlines()
+            for ss in sequence:
+                seq.append(int(ss))
+                seq_file.write(str(int(ss))+"\n")
         while(hit==1):
             hit=0
             a = buff1.find(b'\xff\xd8')
