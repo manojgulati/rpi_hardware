@@ -30,7 +30,7 @@
 //#define no_process
 #define put_overlay
 #include <opencv2/imgproc.hpp>
-#define BUF_NO 100
+#define BUF_NO 150
 int vblank;
 using namespace std;
 using namespace cv;
@@ -97,7 +97,7 @@ void capture()
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now  = (unsigned long)now;
         //        if((int)((time_now-prev_time+3)/10)!=(int)(gl_dl/10)){
-        if(val<10)
+        //:wif(val<10)
            cout<<"duaration "<<time_now-prev_time<<" ms "<<time_now<<"frame number"<<val<<endl;
         prev_time= time_now;
         //cout <<"capture num" << time_now<<endl;
@@ -134,12 +134,16 @@ void capture()
             roi.width = resx[0];  //2360          //2750
             roi.height = resy[0];  //1235 /2
 	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
-	    	bayer->imageData = (char *)(buffer_start);
+	    	bayer->imageData = (char *)(buffer_start);  
 	    	cvSetImageROI(bayer, roi);
+                cout<<"cv copy capture "<<producer_pointer<<endl;
             cvCopy(bayer, src[producer_pointer%BUF_NO]);
+                cout<<"cv copy capture done"<<endl;
             times[producer_pointer%BUF_NO]=time_now;
             seqs[producer_pointer%BUF_NO]=val;
+                cout<<"cv copy relase"<<endl;
             cvReleaseImage(&bayer);
+                cout<<"cv copy relase done"<<endl;
             producer_pointer+=1;
         }
         else {
@@ -178,13 +182,8 @@ void process()
 
             time_stamp=times[consumer_pointer%BUF_NO];
             cap_nu=seqs[consumer_pointer%BUF_NO];
-    	    myfile<<cap_nu<<endl<<flush;
+    	    //myfile<<cap_nu<<endl<<flush;
 	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
-            roi.y =0;
-            roi.x =0;
-            roi.width = resx[0];
-            roi.height = resy[0];
-            cvSetImageROI(to_process,roi);
             cvCopy(src[consumer_pointer%BUF_NO],to_process);
             consumer_pointer+=1;
             cout<<"producer "<<producer_pointer<<" consumer "<<consumer_pointer<<endl;
@@ -227,6 +226,7 @@ void process()
                 // specific experiment where only one camera captures shared region
 
                 #ifndef avoid_small
+                cout<<"set roi 1"<<producer_pointer%BUF_NO<< " "<<consumer_pointer%BUF_NO<<endl;
                     cvSetImageROI(to_process, roi);
                     src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
                     src1 = cvCreateImage(cvSize(roi.width/scale,roi.height/scale), IPL_DEPTH_8U, 1);
@@ -256,6 +256,7 @@ void process()
                     roi.x = 0;
                 }
 
+                cout<<"set roi 2"<<producer_pointer%BUF_NO<<endl;
                 roi.width = resx[0]-roi.width;
 	    	    cvSetImageROI(to_process, roi);
                 src3 = cvCreateImage(cvSize(roi.width,roi.height), IPL_DEPTH_8U, 1);
