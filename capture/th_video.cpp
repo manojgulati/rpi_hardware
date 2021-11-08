@@ -182,7 +182,7 @@ void process()
 
             time_stamp=times[consumer_pointer%BUF_NO];
             cap_nu=seqs[consumer_pointer%BUF_NO];
-    	    //myfile<<cap_nu<<endl<<flush;
+    	    myfile<<cap_nu<<endl<<flush;
 	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
             cvCopy(src[consumer_pointer%BUF_NO],to_process);
             consumer_pointer+=1;

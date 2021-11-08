@@ -41,14 +41,14 @@ lenss = 0
 started=0
 while True:
     t = time()
-    #if (durs != os.path.getmtime(syn)):
-    #    durs = os.path.getmtime(syn)
-    #    f = open(syn)
-    #    f.seek(las3)
-    #    l = b'3'+f.read()
-    #    las3=f.tell()
-    #    send_chuncks(l,len(l)) 
-    #    f.close()
+    if (durs != os.path.getmtime(syn)):
+        durs = os.path.getmtime(syn)
+        f = open(syn)
+        f.seek(las3)
+        l = b'3'+f.read()
+        las3=f.tell()
+        send_chuncks(l,len(l)) 
+        f.close()
     if (dur != os.path.getmtime(file1)):
         started=1
         dur = os.path.getmtime(file1)
