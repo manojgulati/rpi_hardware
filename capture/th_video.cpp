@@ -21,7 +21,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 //#define avoid_small
-//#define switch_stream
+#define switch_stream
 #include <thread>
 #include <ctime>
 #include <sstream>
@@ -30,7 +30,7 @@
 //#define no_process
 #define put_overlay
 #include <opencv2/imgproc.hpp>
-#define BUF_NO 150
+#define BUF_NO 100
 int vblank;
 using namespace std;
 using namespace cv;
@@ -78,23 +78,24 @@ IplImage *bayer, *rgb;
 //int copied = 1;
 int frame_ready= 0;
 int done=0;
-static int global_delay=100000 ;
+static int global_delay=200000 ;
 static int gl_dl = global_delay/1000;
 long dl;
 int cap_nu =0;
 long long int producer_pointer=0;
 long long int consumer_pointer=0;
+int first_cap=1;
 void capture()
 {
     int val = 0;
     while(1)
     {
-        //auto t1 = std::chrono::high_resolution_clock::now();
-//	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-//        time_now2 = (unsigned long)now;
-//        dl = (gl_dl-(time_now2 %gl_dl))%gl_dl;
-        //usleep(dl*1000);
+        auto t1 = std::chrono::high_resolution_clock::now();
 	    auto now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        time_now2 = (unsigned long)now;
+        dl = (gl_dl-(time_now2 %gl_dl))%gl_dl;
+        usleep(dl*1000);
+	    now= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         time_now  = (unsigned long)now;
         //        if((int)((time_now-prev_time+3)/10)!=(int)(gl_dl/10)){
         //:wif(val<10)
@@ -133,17 +134,16 @@ void capture()
             roi.y =0; //350      //150
             roi.width = resx[0];  //2360          //2750
             roi.height = resy[0];  //1235 /2
-	    	bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
+            if(first_cap){
+	    	    bayer = cvCreateImage({w1,h1}, IPL_DEPTH_8U, 1);
+               first_cap  = 0;
+            }
 	    	bayer->imageData = (char *)(buffer_start);  
 	    	cvSetImageROI(bayer, roi);
-                cout<<"cv copy capture "<<producer_pointer<<endl;
             cvCopy(bayer, src[producer_pointer%BUF_NO]);
-                cout<<"cv copy capture done"<<endl;
             times[producer_pointer%BUF_NO]=time_now;
             seqs[producer_pointer%BUF_NO]=val;
-                cout<<"cv copy relase"<<endl;
-            cvReleaseImage(&bayer);
-                cout<<"cv copy relase done"<<endl;
+//            cvReleaseImage(&bayer);
             producer_pointer+=1;
         }
         else {
@@ -182,7 +182,7 @@ void process()
 
             time_stamp=times[consumer_pointer%BUF_NO];
             cap_nu=seqs[consumer_pointer%BUF_NO];
-    	    myfile<<cap_nu<<endl<<flush;
+    	    myfile<<time_stamp<<endl<<flush;
 	        to_process = cvCreateImage(sz, IPL_DEPTH_8U, 1);
             cvCopy(src[consumer_pointer%BUF_NO],to_process);
             consumer_pointer+=1;
@@ -354,7 +354,7 @@ void setup()
         writer2.open("test2.avi",fourcc,fps,S);
     }
     control.id = V4L2_CID_VBLANK;
-     control.value=vblank;
+     control.value=500;
     /* Your loops end here. */
         if(ioctl(fd, VIDIOC_S_CTRL, &control) < 0){
             perror("VDIOC_S_CTRL");
@@ -366,7 +366,7 @@ void setup()
 }
 
 int main(int argc, char** argv){
-        static int align=10000;
+        static int align=15000;
     // read cmd line args
     shared_region=atoi(argv[1]);
     iter=atoi(argv[2]);

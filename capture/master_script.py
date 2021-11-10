@@ -21,6 +21,6 @@ except:
     sys.exit(0)
 os.system("rm -rf con_done")
 os.system("./th_video "+sys.argv[2]+" "+sys.argv[3]+" "+sys.argv[5]+" "+sys.argv[6]+ " "+sys.argv[7]+" >log.txt")
-os.system("pkill -f sender")
-os.system("pkill -f sender_")
+#os.system("pkill -f sender")
+#os.system("pkill -f sender_")
 os.system("rm running.re")

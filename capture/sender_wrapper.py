@@ -10,10 +10,9 @@ except:
 try:
     TCP_IP = sys.argv[2]
     while 1:
-        os.system("python sender.py "+str(client_no)+" "+TCP_IP)
+        os.system("python mod_sender.py "+str(client_no)+" "+TCP_IP)
         sleep(0.5)
 except:
     while 1:
-        os.system("python sender.py "+str(client_no))
+        os.system("python mod_sender.py "+str(client_no))
         sleep(0.5)
-
