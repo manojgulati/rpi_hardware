@@ -1,0 +1,1 @@
+# module created by amit for processing raw images to enhance quality
