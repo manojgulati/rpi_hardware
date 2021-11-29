@@ -61,8 +61,25 @@ def adjust_blacklevel(image, gamma=1.2):
     return cv2.LUT(image, table)
 
 
+def vithurson(frame, gamma):
+    inBlack = np.array([10, 10, 10], dtype=np.float32)
+    inWhite = np.array([190, 255, 190], dtype=np.float32)
+    inGamma = np.array([gamma, gamma, gamma], dtype=np.float32)
+    outBlack = np.array([0, 0, 0], dtype=np.float32)
+    outWhite = np.array([500, 500, 500], dtype=np.float32)
+    # Display the resulting frame
+    img = np.clip((frame - inBlack) / (inWhite - inBlack), 0, 255)
+    img = (img ** (1 / inGamma)) * (outWhite - outBlack) + outBlack
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    (height, width, _) = img.shape
+    scale = int(1080 / height)
+    #        img=cv2.medianBlur(img,5)
+    # img = cv2.fastNlMeansDenoisingColored(img, None, 7, 7, 5, 21)
+    return img
+
+
 if __name__ == "__main__":
-    video_file_path = "data/episode_1/pi_3.avi"
+    video_file_path = "data/episode_2/pi_2.avi"
 
     video = cv2.VideoCapture(video_file_path)
     assert video is not None
@@ -80,21 +97,33 @@ if __name__ == "__main__":
         # process image
         img = frame
 
-        img = white_balance(img, amp=2)
-        cv2.imshow("white_balanced", img)
+        cv2.imshow("vithurson", vithurson(img, 1.1))
 
-        img = adjust_contrast_brightness(img, contrast=1.2, brightness=40)
-        cv2.imshow("contrasted", img)
+        gamma = 1.1
+        inBlack = np.array([10, 10, 10], dtype=np.float32)
+        inWhite = np.array([190, 255, 190], dtype=np.float32)
+        inGamma = np.array([gamma, gamma, gamma], dtype=np.float32)
+        outBlack = np.array([0, 0, 0], dtype=np.float32)
+        outWhite = np.array([500, 500, 500], dtype=np.float32)
+        img = np.clip((frame - inBlack) / (inWhite - inBlack), 0, 255)
+        img = (img ** (1 / inGamma)) * (outWhite - outBlack) + outBlack
+        img = np.clip(img, 0, 255).astype(np.uint8)
 
-        # img = adjust_blacklevel(img)
+        # img = white_balance(img, amp=2)
+        # cv2.imshow("white_balanced", img)
+
+        # img = adjust_contrast_brightness(img, contrast=1.5, brightness=15)
+        # cv2.imshow("contrasted", img)
+
+        # img = adjust_blacklevel(img, gamma=1)
         # cv2.imshow("black_level", img)
 
-        # img = adjust_gamma(img, gamma=1.2)
+        # img = adjust_gamma(img, gamma=1.5)
         # cv2.imshow("gamma", img)
 
         # img = cv2.GaussianBlur(img, ksize=(5, 5), sigmaX=0, sigmaY=0)
-        img = cv2.medianBlur(img, ksize=5)
-        # img = cv2.bilateralFilter(img, 7, 31, 11)
+        # img = cv2.medianBlur(img, ksize=5)
+        img = cv2.bilateralFilter(img, 11, 45, 45)
         # img = contrast_stretch(img)
         cv2.imshow("Blur", img)
 
