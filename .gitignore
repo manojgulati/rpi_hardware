@@ -1,3 +1,4 @@
 raw_image_processing/**/*.jpg
 raw_image_processing/**/*.mp4
 raw_image_processing/**/*.avi
+raw_image_processing/**/*.json

@@ -108,6 +108,7 @@ if __name__ == "__main__":
         img = np.clip((frame - inBlack) / (inWhite - inBlack), 0, 255)
         img = (img ** (1 / inGamma)) * (outWhite - outBlack) + outBlack
         img = np.clip(img, 0, 255).astype(np.uint8)
+        img = cv2.fastNlMeansDenoisingColored(img, None, 5, hColor=5, templateWindowSize=5, searchWindowSize=7)
 
         # img = white_balance(img, amp=2)
         # cv2.imshow("white_balanced", img)
@@ -123,7 +124,7 @@ if __name__ == "__main__":
 
         # img = cv2.GaussianBlur(img, ksize=(5, 5), sigmaX=0, sigmaY=0)
         # img = cv2.medianBlur(img, ksize=5)
-        img = cv2.bilateralFilter(img, 11, 45, 45)
+        # img = cv2.bilateralFilter(img, 15, 45, 45, cv2.BORDER_DEFAULT)
         # img = contrast_stretch(img)
         cv2.imshow("Blur", img)
 

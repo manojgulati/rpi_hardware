@@ -16,6 +16,14 @@ video_frame_pointer_2 = 0  # pointer to specific frame number in video of pi 2 c
 video_frame_pointer_3 = 0  # pointer to specific frame number in video of pi 3 cam
 EPISODE = 2
 
+# parameters used for image enhancements -- by process_frame_v2 method
+gamma = 1.1
+inBlack = np.array([10, 10, 10], dtype=np.float32)
+inWhite = np.array([190, 255, 190], dtype=np.float32)
+inGamma = np.array([gamma, gamma, gamma], dtype=np.float32)
+outBlack = np.array([0, 0, 0], dtype=np.float32)
+outWhite = np.array([500, 500, 500], dtype=np.float32)
+
 
 def white_balance(img, amp=1.3):
     result = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -48,6 +56,18 @@ def adjust_contrast_brightness(img, contrast=1.8, brightness=20):
     return img
 
 
+def process_frame_v2(img):
+    img = cv2.rotate(img, cv2.ROTATE_180)
+    img = np.clip((img - inBlack) / (inWhite - inBlack), 0, 255)
+    img = (img ** (1 / inGamma)) * (outWhite - outBlack) + outBlack
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    img = cv2.fastNlMeansDenoisingColored(img, None, 6, hColor=7, templateWindowSize=5, searchWindowSize=3)
+
+    # resize frame to 1056x1056
+    img = cv2.resize(img, (1056,1056), cv2.INTER_AREA)
+    return img
+
+
 def process_frame(img):
     # process the image for quality enhancement
     img = cv2.rotate(img, cv2.ROTATE_180)
@@ -58,7 +78,7 @@ def process_frame(img):
 
 
 def save_frame(frame, cam_id, frame_num):
-    OUT_DIR = "./data/episode_{}/pi_{}_frames/".format(EPISODE, cam_id)
+    OUT_DIR = "./data/episode_{}/pi_{}_frames_1056_v2/".format(EPISODE, cam_id)
     # print(OUT_DIR)
     frame_name = "frame_{}_{}.jpg".format(cam_id, frame_num)
     cv2.imwrite("{}/{}".format(OUT_DIR, frame_name), frame)
@@ -70,15 +90,18 @@ def extract_frames(video_frame_pointer_1, video_frame_pointer_2, video_frame_poi
     pi_3_video.set(cv2.CAP_PROP_POS_FRAMES, video_frame_pointer_3)
 
     ret, frame = pi_1_video.read()
-    frame = process_frame(frame)
+    # frame = process_frame(frame)
+    frame = process_frame_v2(frame)
     save_frame(frame, 1, video_frame_pointer_2)
 
     ret, frame = pi_2_video.read()
-    frame = process_frame(frame)
+    # frame = process_frame(frame)
+    frame = process_frame_v2(frame)
     save_frame(frame, 2, video_frame_pointer_2)
 
     ret, frame = pi_3_video.read()
-    frame = process_frame(frame)
+    # frame = process_frame(frame)
+    frame = process_frame_v2(frame)
     save_frame(frame, 3, video_frame_pointer_2)
 
 
@@ -148,6 +171,7 @@ if __name__ == "__main__":
     pi_2_logs = ""
     pi_3_logs = ""
 
+    # read log files
     with open(PI_1_LOGS_NAME) as pi_1_logs:
         with open(PI_2_LOGS_NAME) as pi_2_logs:
             with open(PI_3_LOGS_NAME) as pi_3_logs:
@@ -157,7 +181,8 @@ if __name__ == "__main__":
                 pi_2_logs = [int(i) for i in pi_2_logs]
                 pi_3_logs = pi_3_logs.read().split("\n")
                 pi_3_logs = [int(i) for i in pi_3_logs]
-    # taking pi 2 as reference
+
+    # extract frames by taking pi 2 as reference
     pi_2_logs_len = len(pi_2_logs)
     index = 0
     while index < pi_2_logs_len:
